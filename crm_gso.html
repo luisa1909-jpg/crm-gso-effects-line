@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSO Effects Line — CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #FAFAF7;
+    --sidebar: #1A1A1A;
+    --sidebar-light: #252525;
+    --sidebar-text: #ECECEB;
+    --sidebar-text-2: #B0B0AE;
+    --card: #FFFFFF;
+    --border: #E8E8E3;
+    --text: #1F1F1E;
+    --text-2: #6B6B68;
+    --primary: #1A1A1A;
+    --green: #22C55E;
+    --green-bg: #E5F2DC;
+    --green-text: #2D5C18;
+    --amber-bg: #FBE9CA;
+    --amber-text: #6E4408;
+    --red-bg: #FBDED9;
+    --red-text: #7C1F1A;
+    --blue-bg: #DAE8F7;
+    --blue-text: #1A4F8B;
+    --blue-edit: #DAE8F7;
+  }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ===== LOGIN ===== */
+  .login-page { display: flex; min-height: 100vh; }
+  .login-left {
+    flex: 1;
+    background: var(--sidebar-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    padding: 40px;
+  }
+  .login-logo {
+    font-size: 64px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: #fff;
+  }
+  .login-logo .red { color: #E53935; }
+  .login-sub-brand {
+    font-size: 14px;
+    letter-spacing: 6px;
+    color: #B0B0AE;
+    margin-top: 8px;
+    margin-bottom: 40px;
+  }
+  .login-tagline {
+    font-size: 18px;
+    color: #ECECEB;
+    font-weight: 300;
+  }
+  .login-right {
+    flex: 1;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .login-form { width: 100%; max-width: 380px; }
+  .login-form h1 { font-size: 32px; font-weight: 700; margin-bottom: 6px; }
+  .login-form p.sub { color: var(--text-2); margin-bottom: 32px; font-size: 14px; }
+  .login-form label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  .login-form input[type="email"], .login-form input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    font-family: inherit;
+  }
+  .login-form input:focus { outline: none; border-color: var(--primary); }
+  .login-extras {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    font-size: 13px;
+  }
+  .login-extras a { color: var(--blue-text); text-decoration: none; font-weight: 500; }
+  .login-extras label { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; color: var(--text-2); cursor: pointer; }
+  .btn-login {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+  }
+  .btn-login:hover { background: #2A2A2A; }
+  .login-foot {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .login-foot a { color: var(--blue-text); font-weight: 600; text-decoration: none; }
+
+  /* ===== APP LAYOUT ===== */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 230px;
+    background: var(--sidebar);
+    color: var(--sidebar-text);
+    padding: 20px 14px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .main { flex: 1; padding: 28px 36px; max-width: 100%; overflow-x: hidden; }
+
+  .sb-logo {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+    line-height: 1;
+  }
+  .sb-logo .red { color: #E53935; }
+  .sb-sub { font-size: 10px; color: #888; letter-spacing: 2px; margin-top: 4px; margin-bottom: 24px; }
+  .sb-section {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 1.5px;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    padding: 0 8px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--sidebar-text-2);
+    transition: all 0.15s;
+    margin-bottom: 1px;
+    user-select: none;
+  }
+  .nav-item:hover { background: #262625; color: var(--sidebar-text); }
+  .nav-item.active { background: var(--sidebar-text); color: var(--sidebar); font-weight: 600; }
+  .nav-ic { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .sb-spacer { flex: 1; min-height: 12px; }
+  .sb-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px;
+    border-top: 1px solid #2A2A2A;
+    margin-top: 12px;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .sb-profile:hover { background: #262625; }
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #E53935, #6A1B9A);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+  }
+  .sb-profile-info { font-size: 12px; line-height: 1.3; }
+  .sb-profile-name { font-weight: 600; color: var(--sidebar-text); }
+  .sb-profile-role { color: #666; font-size: 11px; }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .h-title { font-size: 24px; font-weight: 700; }
+  .h-sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+  .h-actions { display: flex; gap: 8px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .btn:hover { background: #F5F5F2; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover { background: #2A2A2A; }
+  .btn-green { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-green:hover { background: #16a34a; }
+  .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ===== CARDS ===== */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .metric { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .metric-label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 700; line-height: 1.1; margin-bottom: 4px; }
+  .metric-delta { font-size: 11px; color: var(--text-2); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+  .card-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; gap: 16px; }
+  .card-title { font-size: 15px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--text-2); }
+
+  .row-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .row-2-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+  /* ===== TABLES ===== */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: #FAFAF7; }
+  td { padding: 12px; border-bottom: 1px solid #F0F0EC; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFAF7; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table-empty { text-align: center; padding: 40px 20px; color: var(--text-2); font-size: 13px; }
+
+  /* ===== PRODUCT TABLE (dark header) ===== */
+  .product-table th { background: #1A1A1A; color: #fff; border-bottom: none; }
+  .product-table td.editable { background: var(--blue-edit); cursor: text; }
+  .product-table .col-2026 { background: #2A2A2A; color: #fff; }
+  .product-table td.price-2026 { background: #4A4A47; color: #fff; font-weight: 600; }
+
+  /* ===== PILLS ===== */
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .pill-green { background: var(--green-bg); color: var(--green-text); }
+  .pill-amber { background: var(--amber-bg); color: var(--amber-text); }
+  .pill-red { background: var(--red-bg); color: var(--red-text); }
+  .pill-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .pill-gray { background: #ECECE7; color: #4A4A47; }
+
+  /* ===== SUB-TABS ===== */
+  .subtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .subtab { padding: 10px 16px; cursor: pointer; font-size: 13px; color: var(--text-2); border-bottom: 2px solid transparent; font-weight: 500; }
+  .subtab.active { color: var(--text); border-bottom-color: var(--primary); font-weight: 600; }
+  .subtab:hover { color: var(--text); }
+
+  /* ===== SEARCH ===== */
+  .search { display: flex; gap: 8px; margin-bottom: 16px; }
+  .input {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+  .input:focus { outline: none; border-color: var(--primary); }
+  .search input { flex: 1; }
+
+  /* ===== FORM ===== */
+  .form-row { display: grid; gap: 12px; margin-bottom: 14px; }
+  .form-r2 { grid-template-columns: 1fr 1fr; }
+  .form-r3 { grid-template-columns: 2fr 1fr 1fr; }
+  .form-r3-eq { grid-template-columns: 1fr 1fr 1fr; }
+  .form-r4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .form-label {
+    font-size: 11px;
+    color: var(--text-2);
+    display: block;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+  .form-input:focus { outline: none; border-color: var(--primary); }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; padding-top: 16px; border-top: 1px solid #F0F0EC; }
+
+  .preview { background: #F5F5F2; border-radius: 8px; padding: 14px 16px; margin: 14px 0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .preview-label { color: var(--text-2); }
+  .preview-value { font-weight: 700; font-size: 15px; }
+
+  /* ===== TRANSMISSION CARDS ===== */
+  .trans-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .trans-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+  .trans-num { font-size: 42px; font-weight: 800; line-height: 1; }
+  .trans-num.green { color: var(--green-text); }
+  .trans-num.blue { color: var(--blue-text); }
+  .trans-num.red { color: var(--red-text); }
+  .trans-name { font-weight: 700; font-size: 15px; margin-top: 8px; }
+  .trans-period { font-size: 12px; color: var(--text-2); margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .trans-actions { display: flex; flex-direction: column; gap: 8px; }
+  .trans-actions .btn { width: 100%; text-align: center; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; padding: 11px; }
+
+  /* ===== UPLOAD ICON ===== */
+  .upload-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--text-2);
+    font-size: 16px;
+  }
+  .upload-icon:hover { background: #F0F0EC; color: var(--primary); }
+  .nf-file { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--green-text); background: var(--green-bg); padding: 3px 8px; border-radius: 6px; }
+  .nf-file .x { cursor: pointer; color: var(--red-text); margin-left: 4px; }
+
+  /* ===== PROFILE ===== */
+  .profile-card { max-width: 600px; }
+  .profile-photo-row { display: flex; gap: 20px; align-items: center; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #E53935, #6A1B9A);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 28px;
+    background-size: cover;
+    background-position: center;
+  }
+  .profile-photo-info { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-chart { text-align: center; padding: 60px 20px; color: var(--text-2); font-size: 13px; }
+
+  /* ===== TRANS LIST ===== */
+  .trans-list-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F0F0EC; }
+  .trans-list-row:last-child { border-bottom: none; }
+  .trans-list-info { font-size: 13px; }
+  .trans-list-info strong { font-weight: 600; }
+  .trans-list-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .whatsapp-link {
+    background: #25D366;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .whatsapp-link:hover { background: #1ea952; }
+
+  /* ===== REACT (Reativação) ===== */
+  .react-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F0F0EC; }
+  .react-row:last-child { border-bottom: none; }
+  .react-info { font-size: 13px; }
+  .react-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .react-value { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ===== CHART ===== */
+  .chart-wrap { position: relative; height: 260px; width: 100%; }
+  .chart-wrap-sm { position: relative; height: 200px; width: 100%; }
+
+  /* ===== MODAL ===== */
+  .modal-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+  /* ===== HIDDEN ===== */
+  .hidden { display: none !important; }
+
+  /* ===== INFO BANNER ===== */
+  .info-banner {
+    background: #F5F5F2;
+    border-left: 3px solid var(--primary);
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-2);
+    margin-bottom: 16px;
+  }
+
+  /* ===== ARROW ===== */
+  .arrow-up { color: var(--green-text); font-weight: 600; }
+  .arrow-down { color: var(--red-text); font-weight: 600; }
+
+  /* ===== RESPONSIVE ===== */
+  .menu-toggle { display: none; background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; }
+  @media (max-width: 900px) {
+    .login-page { flex-direction: column; }
+    .login-left { padding: 40px 20px; min-height: 30vh; }
+    .login-logo { font-size: 42px; }
+    .sidebar { position: fixed; left: -240px; z-index: 100; transition: left 0.25s; }
+    .sidebar.open { left: 0; }
+    .main { padding: 16px; width: 100%; }
+    .menu-toggle { display: block; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .row-2, .row-2-equal, .row-3, .trans-grid { grid-template-columns: 1fr; }
+    .form-r2, .form-r3, .form-r3-eq, .form-r4 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login-page" class="login-page">
+  <div class="login-left">
+    <div class="login-logo">G<span class="red">S</span>O</div>
+    <div class="login-sub-brand">EFFECTS LINE</div>
+    <div class="login-tagline">Inteligência comercial integrada</div>
+  </div>
+  <div class="login-right">
+    <div class="login-form">
+      <h1>Bem-vindo</h1>
+      <p class="sub">Acesse sua conta para começar</p>
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" value="luisa@gsoeffects.com">
+      <label>Senha</label>
+      <input type="password" id="login-pass" placeholder="••••••••" value="demo123">
+      <div class="login-extras">
+        <label><input type="checkbox" id="remember"> Lembrar-me</label>
+        <a href="#" onclick="alert('Funcionalidade: recuperação de senha (a implementar com backend)')">Esqueci a senha</a>
+      </div>
+      <button class="btn-login" onclick="doLogin()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="10" height="7" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/></svg>
+        Entrar
+      </button>
+      <div class="login-foot">Não tem conta? <a href="#" onclick="alert('Solicitação enviada ao administrador.')">Solicitar acesso</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="app hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">G<span class="red">S</span>O</div>
+    <div class="sb-sub">EFFECTS LINE</div>
+
+    <div class="sb-section">MENU</div>
+    <div class="nav-item active" data-view="dash" onclick="navTo('dash')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+      Dashboard
+    </div>
+
+    <div class="sb-section">OPERAÇÕES</div>
+    <div class="nav-item" data-view="vendas" onclick="navTo('vendas')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+      Vendas
+    </div>
+    <div class="nav-item" data-view="clientes" onclick="navTo('clientes')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>
+      Clientes
+    </div>
+
+    <div class="sb-section">CATÁLOGO</div>
+    <div class="nav-item" data-view="produtos" onclick="navTo('produtos')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l6 3v8l-6 3-6-3V4z"/><path d="M2 4l6 3 6-3M8 7v8"/></svg>
+      Produtos
+    </div>
+
+    <div class="sb-section">MARKETING</div>
+    <div class="nav-item" data-view="transmissao" onclick="navTo('transmissao')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8H2z"/><path d="M2 4l6 5 6-5"/></svg>
+      Listas Transmissão
+    </div>
+    <div class="nav-item" data-view="reativacao" onclick="navTo('reativacao')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 2.5"/></svg>
+      Reativação
+    </div>
+
+    <div class="sb-section">INTELIGÊNCIA</div>
+    <div class="nav-item" data-view="relatorios" onclick="navTo('relatorios')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V3M2 14h12M5 11V8M8 11V5M11 11V7"/></svg>
+      Relatórios
+    </div>
+
+    <div class="sb-section">SISTEMA</div>
+    <div class="nav-item" data-view="config" onclick="navTo('config')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M15 8h-2M3 8H1M12.95 3.05l-1.41 1.41M4.46 11.54l-1.41 1.41M12.95 12.95l-1.41-1.41M4.46 4.46L3.05 3.05"/></svg>
+      Configurações
+    </div>
+
+    <div class="sb-spacer"></div>
+
+    <div class="sb-profile" onclick="navTo('perfil')">
+      <div class="avatar" id="sb-avatar">L</div>
+      <div class="sb-profile-info">
+        <div class="sb-profile-name" id="sb-name">Luísa</div>
+        <div class="sb-profile-role">Administrador</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+
+    <!-- ============ DASHBOARD ============ -->
+    <div id="view-dash">
+      <div class="header">
+        <div>
+          <div class="h-title">Visão geral</div>
+          <div class="h-sub">Performance de vendas e base de clientes</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn btn-primary" onclick="navTo('nova')">+ Nova venda</button>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">Faturamento total</div>
+          <div class="metric-value" id="m-fat">R$ 0,00</div>
+          <div class="metric-delta" id="m-fat-sub">Sem vendas ainda</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Pedidos</div>
+          <div class="metric-value" id="m-ped">0</div>
+          <div class="metric-delta" id="m-ped-sub">0 clientes únicos</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Ticket médio</div>
+          <div class="metric-value" id="m-tic">R$ 0,00</div>
+          <div class="metric-delta">por pedido</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Clientes ativos</div>
+          <div class="metric-value" id="m-ati">0</div>
+          <div class="metric-delta">Compraram nos últimos 30d</div>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <div class="card-title">Faturamento mensal</div>
+              <div class="card-sub">Evolução dos últimos meses</div>
+            </div>
+          </div>
+          <div class="chart-wrap" id="chart-mensal-wrap">
+            <canvas id="chartMensal"></canvas>
+            <div class="empty-chart hidden" id="empty-mensal">Sem dados ainda — registre sua primeira venda</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;">Por status</div>
+          <div style="display:flex;flex-direction:column;gap:12px;" id="status-counts">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:13px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3FA15A;margin-right:8px;"></span>Ativos</span>
+              <span style="font-weight:700;" id="st-ativo">0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:13px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#E59A1F;margin-right:8px;"></span>Em risco</span>
+              <span style="font-weight:700;" id="st-risco">0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:13px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#D14141;margin-right:8px;"></span>Inativos</span>
+              <span style="font-weight:700;" id="st-inativo">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row-2-equal">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;">Top produtos</div>
+          <div id="dash-top-prod"><div class="table-empty">Sem dados ainda</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;">Por vendedor</div>
+          <div id="dash-vend"><div class="table-empty">Sem dados ainda</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VENDAS ============ -->
+    <div id="view-vendas" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Vendas</div>
+          <div class="h-sub"><span id="vendas-count">0</span> pedidos registrados</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn btn-primary" onclick="navTo('nova')">+ Nova venda</button>
+        </div>
+      </div>
+
+      <div class="search">
+        <input type="text" class="input" id="searchVendas" placeholder="Buscar cliente, produto..." oninput="renderVendas()">
+        <select class="input" id="filterAno" onchange="renderVendas()">
+          <option value="">Todos os anos</option>
+        </select>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Produto</th>
+              <th>Aroma</th>
+              <th class="num">Qtd</th>
+              <th class="num">Valor</th>
+              <th>Vendedor</th>
+              <th>Nota Fiscal</th>
+            </tr>
+          </thead>
+          <tbody id="vendasTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ CLIENTES ============ -->
+    <div id="view-clientes" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Clientes</div>
+          <div class="h-sub"><span id="clientes-count">0</span> clientes na base</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn btn-primary" onclick="navTo('nova')">+ Nova venda</button>
+          <button class="btn btn-green" onclick="openClienteModal()">+ Novo Cliente</button>
+        </div>
+      </div>
+
+      <div class="subtabs">
+        <div class="subtab active" data-subtab="crm" onclick="switchClienteTab('crm')">CRM Principal</div>
+        <div class="subtab" data-subtab="fiscal" onclick="switchClienteTab('fiscal')">Dados Fiscais</div>
+      </div>
+
+      <!-- CRM Principal -->
+      <div id="sub-crm">
+        <div class="metrics" style="grid-template-columns:repeat(3,1fr);">
+          <div class="metric">
+            <div class="metric-label">Ativos</div>
+            <div class="metric-value" style="color:var(--green-text);" id="c-ativo">0</div>
+            <div class="metric-delta">Últimos 30d</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Em risco</div>
+            <div class="metric-value" style="color:var(--amber-text);" id="c-risco">0</div>
+            <div class="metric-delta">31 a 60 dias</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Inativos</div>
+            <div class="metric-value" style="color:var(--red-text);" id="c-inativo">0</div>
+            <div class="metric-delta">Mais de 60 dias</div>
+          </div>
+        </div>
+
+        <div class="search">
+          <input type="text" class="input" id="searchClientes" placeholder="Buscar cliente..." oninput="renderClientes()">
+          <select class="input" id="filterStatus" onchange="renderClientes()">
+            <option value="">Todos os status</option>
+            <option value="Ativo">Ativos</option>
+            <option value="Em Risco">Em risco</option>
+            <option value="Inativo">Inativos</option>
+          </select>
+        </div>
+
+        <div class="card" style="padding:0;">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Última compra</th>
+                <th class="num">Total gasto</th>
+                <th>Status</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="clientesTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dados Fiscais -->
+      <div id="sub-fiscal" class="hidden">
+        <div class="header" style="margin-bottom:16px;">
+          <div>
+            <div class="card-title">Dados Fiscais</div>
+            <div class="card-sub">Informações de CPF/CNPJ e endereço para emissão de notas</div>
+          </div>
+          <div class="h-actions">
+            <button class="btn btn-primary" onclick="openFiscalModal()">+ Adicionar dados fiscais</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente no PDF</th>
+                <th>CPF/CNPJ</th>
+                <th>Endereço</th>
+                <th>CEP</th>
+                <th>Cidade/UF</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="fiscalTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PRODUTOS ============ -->
+    <div id="view-produtos" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Produtos — catálogo e preços</div>
+          <div class="h-sub">Performance por SKU</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn btn-primary" onclick="navTo('nova')">+ Nova venda</button>
+        </div>
+      </div>
+
+      <div class="info-banner">
+        Edite preços nas células azuis. Un/CX recalcula por tamanho: 5L=4, 1L=6, 250g/120mL sem caixa.
+      </div>
+
+      <div class="card" style="padding:0; overflow-x:auto;">
+        <table class="product-table">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Tamanho</th>
+              <th class="num">Un/CX</th>
+              <th class="num">Unit. 24-25</th>
+              <th class="num">Caixa 24-25</th>
+              <th class="num col-2026">Unit. 2026</th>
+              <th class="num col-2026">Caixa 2026</th>
+              <th class="num">Qtd Vendida</th>
+              <th class="num">Faturamento</th>
+              <th>Última Venda</th>
+              <th class="num">Pedidos</th>
+              <th>Aroma</th>
+            </tr>
+          </thead>
+          <tbody id="produtosTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ TRANSMISSAO ============ -->
+    <div id="view-transmissao" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Listas de Transmissão</div>
+          <div class="h-sub">Segmentação para campanhas WhatsApp e email</div>
+        </div>
+      </div>
+
+      <div class="trans-grid">
+        <div class="trans-card">
+          <div class="trans-num green" id="t-vip">0</div>
+          <div class="trans-name">VIP</div>
+          <div class="trans-period">Últimos 60 dias</div>
+          <div class="trans-actions">
+            <button class="btn" onclick="openTransList('vip')">Ver Lista</button>
+            <button class="btn" onclick="copiarLista('vip')">Copiar Lista</button>
+            <button class="btn" onclick="exportarCSV('vip')">Exportar CSV</button>
+          </div>
+        </div>
+        <div class="trans-card">
+          <div class="trans-num blue" id="t-freq">0</div>
+          <div class="trans-name">Frequente</div>
+          <div class="trans-period">Últimos 90 dias</div>
+          <div class="trans-actions">
+            <button class="btn" onclick="openTransList('freq')">Ver Lista</button>
+            <button class="btn" onclick="copiarLista('freq')">Copiar Lista</button>
+            <button class="btn" onclick="exportarCSV('freq')">Exportar CSV</button>
+          </div>
+        </div>
+        <div class="trans-card">
+          <div class="trans-num red" id="t-risco">0</div>
+          <div class="trans-name">Em Risco</div>
+          <div class="trans-period">31–60 dias</div>
+          <div class="trans-actions">
+            <button class="btn" onclick="openTransList('risco')">Ver Lista</button>
+            <button class="btn" onclick="copiarLista('risco')">Copiar Lista</button>
+            <button class="btn" onclick="exportarCSV('risco')">Exportar CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="trans-list-card" style="display:none;">
+        <div class="card-h">
+          <div>
+            <div class="card-title" id="trans-list-title">Lista</div>
+            <div class="card-sub" id="trans-list-sub"></div>
+          </div>
+          <button class="btn" onclick="document.getElementById('trans-list-card').style.display='none'">Fechar</button>
+        </div>
+        <div id="trans-list-body"></div>
+      </div>
+    </div>
+
+    <!-- ============ REATIVACAO ============ -->
+    <div id="view-reativacao" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Reativação</div>
+          <div class="h-sub">Clientes inativos por valor histórico</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Top clientes para recontatar</div>
+            <div class="card-sub">Maior valor histórico, mais de 60 dias sem comprar</div>
+          </div>
+        </div>
+        <div id="reativacaoList"><div class="table-empty">Nenhum cliente inativo ainda</div></div>
+      </div>
+    </div>
+
+    <!-- ============ RELATORIOS ============ -->
+    <div id="view-relatorios" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Relatórios</div>
+          <div class="h-sub">Análise de vendas, ranking e fiscal</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn" onclick="alert('Exportar PDF: gera relatório consolidado (a implementar com biblioteca de PDF)')">Exportar PDF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Vendas por Vendedor</div>
+            <div class="card-sub">Faturamento e número de transações</div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th class="num">Faturamento</th>
+              <th class="num">Número de vendas</th>
+              <th class="num">Ticket médio</th>
+              <th class="num">Variação %</th>
+            </tr>
+          </thead>
+          <tbody id="rel-vendedor"></tbody>
+        </table>
+      </div>
+
+      <div class="row-2-equal">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">Faturamento mensal</div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartRelMensal"></canvas>
+            <div class="empty-chart hidden" id="empty-rel-mensal">Sem dados ainda</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">Fiscal — NF emitida</div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartRelFiscal"></canvas>
+            <div class="empty-chart hidden" id="empty-rel-fiscal">Sem dados ainda</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Top Produtos</div>
+            <div class="card-sub">Ranking por faturamento e quantidade</div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Tamanho</th>
+              <th class="num">Qtd vendida</th>
+              <th class="num">Pedidos</th>
+              <th class="num">Faturamento</th>
+            </tr>
+          </thead>
+          <tbody id="rel-produtos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ CONFIGURACOES ============ -->
+    <div id="view-config" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">⚙ Configurações</div>
+          <div class="h-sub">Informações do sistema e backup</div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:600px;">
+        <div class="card-title" style="margin-bottom:16px;">Informações do Sistema</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.8;">
+          <div><strong>Período:</strong> <span id="cfg-periodo">—</span></div>
+          <div><strong>Total de Registros Clientes:</strong> <span id="cfg-clientes">0</span></div>
+          <div><strong>Total de Vendas Registradas:</strong> <span id="cfg-vendas">0</span></div>
+          <div><strong>Total de Contatos:</strong> <span id="cfg-contatos">0</span></div>
+          <div><strong>Produtos Catalogados:</strong> <span id="cfg-produtos">0</span></div>
+          <div><strong>Última Atualização:</strong> <span id="cfg-update">—</span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-icon" onclick="baixarBackup()"> Baixar Base Completa (JSON)</button>
+          <button class="btn btn-icon" onclick="document.getElementById('restore-input').click()"> Recarregar Dados</button>
+          <input type="file" id="restore-input" accept="application/json" style="display:none;" onchange="restaurarBackup(event)">
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PERFIL ============ -->
+    <div id="view-perfil" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Meu Perfil</div>
+          <div class="h-sub">Dados pessoais e configurações</div>
+        </div>
+      </div>
+
+      <div class="card profile-card">
+        <div class="profile-photo-row">
+          <div class="profile-avatar" id="profile-avatar">L</div>
+          <div>
+            <button class="btn" onclick="document.getElementById('photo-input').click()">Alterar Foto</button>
+            <input type="file" id="photo-input" accept="image/jpeg,image/png" style="display:none;" onchange="changePhoto(event)">
+            <div class="profile-photo-info">JPG, PNG, máx. 2MB</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-input" id="p-nome" value="Luísa Oliveira">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="p-email" value="luisa@gsoeffects.com">
+          </div>
+        </div>
+        <div class="form-row form-r2">
+          <div>
+            <label class="form-label">Nova Senha</label>
+            <input type="password" class="form-input" id="p-senha" placeholder="Deixe em branco para manter">
+          </div>
+          <div>
+            <label class="form-label">Confirmar Senha</label>
+            <input type="password" class="form-input" id="p-senha2" placeholder="Confirme a nova senha">
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-green" onclick="salvarPerfil()">Salvar Alterações</button>
+          <button class="btn" onclick="logout()" style="margin-left:8px;">Sair</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ NOVA VENDA ============ -->
+    <div id="view-nova" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Nova venda</div>
+          <div class="h-sub">Registrar pedido</div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:720px;">
+        <div class="form-row form-r2">
+          <div>
+            <label class="form-label">Data</label>
+            <input type="date" class="form-input" id="f-data">
+          </div>
+          <div>
+            <label class="form-label">Cliente</label>
+            <input type="text" class="form-input" id="f-cliente" placeholder="Nome do cliente" list="clientesList">
+            <datalist id="clientesList"></datalist>
+          </div>
+        </div>
+
+        <div class="form-row form-r4">
+          <div>
+            <label class="form-label">Produto</label>
+            <select class="form-input" id="f-produto" onchange="updatePreview()">
+              <option>Palco</option>
+              <option>DJs and Clubs</option>
+              <option>Haze</option>
+              <option>Haze Oil</option>
+              <option>CO₂ Simulator</option>
+              <option>Low Fog</option>
+              <option>Snow</option>
+              <option>Bubble</option>
+              <option>Clean</option>
+              <option>Top Up - Limpeza a Seco</option>
+              <option>Top Up - Lentes e Telas Cristalinas</option>
+              <option>Álcool Isopropílico</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Tamanho</label>
+            <select class="form-input" id="f-tamanho" onchange="updatePreview()">
+              <option>5L</option>
+              <option>1L</option>
+              <option>250g</option>
+              <option>120mL</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Aroma</label>
+            <select class="form-input" id="f-aroma" onchange="toggleAromaCustom()">
+              <option>Neutro</option>
+              <option>Tropical</option>
+              <option>Tutti Frutti</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Qtd</label>
+            <input type="number" class="form-input" id="f-qtd" value="1" min="1" oninput="updatePreview()">
+          </div>
+        </div>
+
+        <div class="form-row hidden" id="f-aroma-custom-row">
+          <div>
+            <label class="form-label">Especifique o aroma</label>
+            <input type="text" class="form-input" id="f-aroma-custom" placeholder="Ex: menta, lavanda...">
+          </div>
+        </div>
+
+        <div class="preview">
+          <span class="preview-label">Preço de tabela sugerido</span>
+          <span class="preview-value" id="precoSugerido">R$ 0,00</span>
+        </div>
+
+        <div class="form-row form-r3-eq">
+          <div>
+            <label class="form-label">Valor cobrado (R$)</label>
+            <input type="number" class="form-input" id="f-valor" placeholder="0,00" step="0.01">
+          </div>
+          <div>
+            <label class="form-label">Pagamento</label>
+            <select class="form-input" id="f-pag">
+              <option>Pix Itaú</option>
+              <option>Maq Ton</option>
+              <option>Dinheiro</option>
+              <option>Pix Sicredi</option>
+              <option>Boleto</option>
+              <option>Anotado</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Vendedor</label>
+            <select class="form-input" id="f-vend">
+              <option>Tuanny</option>
+              <option>Guilherme</option>
+              <option>Luísa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Observações</label>
+            <input type="text" class="form-input" id="f-obs" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" onclick="navTo('dash')">Cancelar</button>
+          <button class="btn btn-primary" onclick="salvarVenda()">Salvar venda</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ MODAL CLIENTE ============ -->
+<div class="modal-bg" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-title">Novo Cliente</div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Nome</label>
+        <input type="text" class="form-input" id="mc-nome" placeholder="Nome do cliente">
+      </div>
+    </div>
+    <div class="form-row form-r2">
+      <div>
+        <label class="form-label">Telefone</label>
+        <input type="text" class="form-input" id="mc-tel" placeholder="(51) 99999-9999">
+      </div>
+      <div>
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="mc-email" placeholder="email@exemplo.com">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="document.getElementById('modal-cliente').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-green" onclick="salvarCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL FISCAL ============ -->
+<div class="modal-bg" id="modal-fiscal">
+  <div class="modal">
+    <div class="modal-title">Dados Fiscais</div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Cliente no PDF</label>
+        <input type="text" class="form-input" id="mf-nome" placeholder="Razão social ou nome">
+      </div>
+    </div>
+    <div class="form-row form-r2">
+      <div>
+        <label class="form-label">CPF/CNPJ</label>
+        <input type="text" class="form-input" id="mf-doc" placeholder="00.000.000/0000-00">
+      </div>
+      <div>
+        <label class="form-label">CEP</label>
+        <input type="text" class="form-input" id="mf-cep" placeholder="00000-000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Endereço</label>
+        <input type="text" class="form-input" id="mf-end" placeholder="Rua, número, complemento">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Cidade/UF</label>
+        <input type="text" class="form-input" id="mf-cidade" placeholder="Cidade/UF">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="document.getElementById('modal-fiscal').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-green" onclick="salvarFiscal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA STORE ============
+const STORE = {
+  load() {
+    return {
+      session: JSON.parse(localStorage.getItem('gso_session') || 'null'),
+      user: JSON.parse(localStorage.getItem('gso_user') || JSON.stringify({
+        nome: 'Luísa Oliveira',
+        email: 'luisa@gsoeffects.com',
+        senha: 'demo123',
+        foto: null
+      })),
+      vendas: JSON.parse(localStorage.getItem('gso_vendas') || '[]'),
+      clientes: JSON.parse(localStorage.getItem('gso_clientes') || '[]'),
+      fiscais: JSON.parse(localStorage.getItem('gso_fiscais') || '[]'),
+      produtos: JSON.parse(localStorage.getItem('gso_produtos') || 'null') || defaultProdutos()
+    };
+  },
+  save(key, data) {
+    localStorage.setItem('gso_' + key, JSON.stringify(data));
+  },
+  saveAll(state) {
+    Object.keys(state).forEach(k => {
+      if (k !== 'session') this.save(k, state[k]);
+    });
+  }
+};
+
+function defaultProdutos() {
+  return [
+    { produto: 'Palco', tamanho: '1L', unitOld: 30, caixaOld: 180, unit2026: 30, caixa2026: 180, aroma: 'Neutro' },
+    { produto: 'Palco', tamanho: '5L', unitOld: 80, caixaOld: 260, unit2026: 90, caixa2026: 290, aroma: 'Neutro' },
+    { produto: 'DJs and Clubs', tamanho: '1L', unitOld: 35, caixaOld: 210, unit2026: 35, caixa2026: 210, aroma: 'Neutro' },
+    { produto: 'DJs and Clubs', tamanho: '5L', unitOld: 90, caixaOld: 300, unit2026: 120, caixa2026: 390, aroma: 'Neutro' },
+    { produto: 'Haze', tamanho: '5L', unitOld: 100, caixaOld: 330, unit2026: 120, caixa2026: 380, aroma: 'Neutro' },
+    { produto: 'Haze Oil', tamanho: '5L', unitOld: 290, caixaOld: 1000, unit2026: 290, caixa2026: 1000, aroma: 'Neutro' },
+    { produto: 'CO₂ Simulator', tamanho: '5L', unitOld: 0, caixaOld: 0, unit2026: 200, caixa2026: 600, aroma: 'Neutro' },
+    { produto: 'Low Fog', tamanho: '5L', unitOld: 0, caixaOld: 0, unit2026: 200, caixa2026: 600, aroma: 'Neutro' },
+    { produto: 'Snow', tamanho: '5L', unitOld: 80, caixaOld: 320, unit2026: 90, caixa2026: 260, aroma: 'Neutro' },
+    { produto: 'Bubble', tamanho: '1L', unitOld: 30, caixaOld: 180, unit2026: 40, caixa2026: 240, aroma: 'Neutro' },
+    { produto: 'Bubble', tamanho: '5L', unitOld: 0, caixaOld: 0, unit2026: 0, caixa2026: 0, aroma: 'Neutro' },
+    { produto: 'Clean', tamanho: '1L', unitOld: 20, caixaOld: 120, unit2026: 20, caixa2026: 120, aroma: 'Neutro' },
+    { produto: 'Top Up - Limpeza a Seco', tamanho: '250g', unitOld: 50, caixaOld: 0, unit2026: 50, caixa2026: 0, aroma: 'Neutro' },
+    { produto: 'Top Up - Limpeza a Seco', tamanho: '1L', unitOld: 0, caixaOld: 0, unit2026: 0, caixa2026: 0, aroma: 'Neutro' },
+    { produto: 'Top Up - Lentes e Telas Cristalinas', tamanho: '120mL', unitOld: 30, caixaOld: 0, unit2026: 30, caixa2026: 0, aroma: 'Neutro' },
+    { produto: 'Álcool Isopropílico', tamanho: '1L', unitOld: 0, caixaOld: 0, unit2026: 30, caixa2026: 180, aroma: 'Neutro' }
+  ];
+}
+
+let state = STORE.load();
+
+// ============ HELPERS ============
+function fmtBR(v) {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtBRshort(v) {
+  return 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR');
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = typeof d === 'string' ? new Date(d) : d;
+  return dt.toLocaleDateString('pt-BR');
+}
+function daysBetween(d1, d2) {
+  const a = typeof d1 === 'string' ? new Date(d1) : d1;
+  const b = typeof d2 === 'string' ? new Date(d2) : d2;
+  return Math.floor((b - a) / (1000 * 60 * 60 * 24));
+}
+function getUnCx(tamanho) {
+  if (tamanho === '5L') return 4;
+  if (tamanho === '1L') return 6;
+  return 0;
+}
+function statusOf(dias) {
+  if (dias <= 30) return 'Ativo';
+  if (dias <= 60) return 'Em Risco';
+  return 'Inativo';
+}
+function pillClass(s) {
+  return s === 'Ativo' ? 'pill-green' : s === 'Em Risco' ? 'pill-amber' : 'pill-red';
+}
+
+// ============ LOGIN ============
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (!email || !pass) {
+    alert('Preencha email e senha.');
+    return;
+  }
+  // Token simulado
+  localStorage.setItem('gso_session', JSON.stringify({
+    token: 'demo-' + Date.now(),
+    email,
+    loggedAt: new Date().toISOString()
+  }));
+  state.session = { token: 'demo', email };
+  showApp();
+}
+
+function logout() {
+  localStorage.removeItem('gso_session');
+  state.session = null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+}
+
+function showApp() {
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  renderAll();
+}
+
+// ============ NAVEGAÇÃO ============
+const VIEWS = ['dash','vendas','clientes','produtos','transmissao','reativacao','relatorios','config','perfil','nova'];
+function navTo(view) {
+  VIEWS.forEach(v => {
+    document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
+  });
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.view === view);
+  });
+  // fechar sidebar mobile
+  document.getElementById('sidebar').classList.remove('open');
+
+  if (view === 'dash') renderDash();
+  if (view === 'vendas') renderVendas();
+  if (view === 'clientes') renderClientes();
+  if (view === 'produtos') renderProdutos();
+  if (view === 'transmissao') renderTransmissao();
+  if (view === 'reativacao') renderReativacao();
+  if (view === 'relatorios') renderRelatorios();
+  if (view === 'config') renderConfig();
+  if (view === 'perfil') renderPerfil();
+  if (view === 'nova') initNova();
+}
+
+// ============ COMPUTAÇÕES ============
+function computeClientes() {
+  // Agrega vendas por cliente
+  const map = {};
+  const today = new Date();
+  state.vendas.forEach(v => {
+    const k = v.cliente;
+    if (!map[k]) {
+      const cli = state.clientes.find(c => c.nome === k);
+      map[k] = {
+        nome: k,
+        telefone: cli?.telefone || '',
+        email: cli?.email || '',
+        total: 0,
+        pedidos: 0,
+        ultima: null
+      };
+    }
+    map[k].total += parseFloat(v.valor) || 0;
+    map[k].pedidos += 1;
+    const dt = new Date(v.data);
+    if (!map[k].ultima || dt > map[k].ultima) map[k].ultima = dt;
+  });
+  // Adiciona clientes sem vendas
+  state.clientes.forEach(c => {
+    if (!map[c.nome]) {
+      map[c.nome] = {
+        nome: c.nome,
+        telefone: c.telefone || '',
+        email: c.email || '',
+        total: 0,
+        pedidos: 0,
+        ultima: null
+      };
+    }
+  });
+  return Object.values(map).map(c => {
+    const dias = c.ultima ? daysBetween(c.ultima, today) : 999;
+    return { ...c, dias, status: statusOf(dias) };
+  }).sort((a, b) => b.total - a.total);
+}
+
+function computeMensal() {
+  const map = {};
+  state.vendas.forEach(v => {
+    const d = new Date(v.data);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    map[key] = (map[key] || 0) + (parseFloat(v.valor) || 0);
+  });
+  return Object.keys(map).sort().map(k => ({ mes: k, fat: map[k] }));
+}
+
+function computeAnos() {
+  const set = new Set();
+  state.vendas.forEach(v => set.add(new Date(v.data).getFullYear()));
+  return [...set].sort().reverse();
+}
+
+// ============ RENDER DASHBOARD ============
+let chartMensalInst = null, chartRelMensalInst = null, chartRelFiscalInst = null;
+
+function renderDash() {
+  const total = state.vendas.reduce((s, v) => s + (parseFloat(v.valor) || 0), 0);
+  const ped = state.vendas.length;
+  const clientesUnicos = new Set(state.vendas.map(v => v.cliente)).size;
+  const tic = ped > 0 ? total / ped : 0;
+
+  const clis = computeClientes();
+  const ativos = clis.filter(c => c.status === 'Ativo').length;
+  const risco = clis.filter(c => c.status === 'Em Risco').length;
+  const inativos = clis.filter(c => c.status === 'Inativo').length;
+
+  document.getElementById('m-fat').textContent = fmtBR(total);
+  document.getElementById('m-fat-sub').textContent = ped > 0 ? 'Histórico completo' : 'Sem vendas ainda';
+  document.getElementById('m-ped').textContent = ped;
+  document.getElementById('m-ped-sub').textContent = clientesUnicos + ' clientes únicos';
+  document.getElementById('m-tic').textContent = fmtBR(tic);
+  document.getElementById('m-ati').textContent = ativos;
+
+  document.getElementById('st-ativo').textContent = ativos;
+  document.getElementById('st-risco').textContent = risco;
+  document.getElementById('st-inativo').textContent = inativos;
+
+  // Gráfico mensal
+  const mensal = computeMensal();
+  const emptyMensal = document.getElementById('empty-mensal');
+  const canvasMensal = document.getElementById('chartMensal');
+  if (chartMensalInst) chartMensalInst.destroy();
+  if (mensal.length === 0) {
+    canvasMensal.style.display = 'none';
+    emptyMensal.classList.remove('hidden');
+  } else {
+    canvasMensal.style.display = 'block';
+    emptyMensal.classList.add('hidden');
+    chartMensalInst = new Chart(canvasMensal.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: mensal.map(m => {
+          const [y, mo] = m.mes.split('-');
+          return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(mo) - 1] + '/' + y.slice(2);
+        }),
+        datasets: [{
+          data: mensal.map(m => m.fat),
+          backgroundColor: '#1A1A1A',
+          borderRadius: 4,
+          maxBarThickness: 28
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtBR(c.parsed.y) } } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#F0F0EC' }, ticks: { callback: v => 'R$ ' + (v / 1000) + 'k' } }
+        }
+      }
+    });
+  }
+
+  // Top produtos
+  const prodMap = {};
+  state.vendas.forEach(v => {
+    const k = v.produto + '|' + v.tamanho;
+    if (!prodMap[k]) prodMap[k] = { produto: v.produto, tamanho: v.tamanho, qtd: 0, fat: 0 };
+    prodMap[k].qtd += parseInt(v.qtd) || 0;
+    prodMap[k].fat += parseFloat(v.valor) || 0;
+  });
+  const topProd = Object.values(prodMap).sort((a, b) => b.fat - a.fat).slice(0, 5);
+  const topProdEl = document.getElementById('dash-top-prod');
+  if (topProd.length === 0) {
+    topProdEl.innerHTML = '<div class="table-empty">Sem dados ainda</div>';
+  } else {
+    const maxP = topProd[0].fat;
+    topProdEl.innerHTML = topProd.map(p => `
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px;">
+        <div style="width:140px;flex-shrink:0;">${p.produto} <span style="color:#6B6B68;">${p.tamanho}</span></div>
+        <div style="flex:1;height:8px;background:#F0F0EC;border-radius:4px;overflow:hidden;"><div style="width:${(p.fat/maxP)*100}%;height:100%;background:#1A1A1A;"></div></div>
+        <div style="width:90px;text-align:right;color:#6B6B68;font-size:12px;">${fmtBRshort(p.fat)}</div>
+      </div>
+    `).join('');
+  }
+
+  // Por vendedor
+  const vendMap = {};
+  state.vendas.forEach(v => {
+    vendMap[v.vendedor] = (vendMap[v.vendedor] || 0) + (parseFloat(v.valor) || 0);
+  });
+  const vendArr = Object.entries(vendMap).map(([nome, fat]) => ({ nome, fat })).sort((a, b) => b.fat - a.fat);
+  const vendEl = document.getElementById('dash-vend');
+  if (vendArr.length === 0) {
+    vendEl.innerHTML = '<div class="table-empty">Sem dados ainda</div>';
+  } else {
+    const maxV = vendArr[0].fat;
+    vendEl.innerHTML = vendArr.map(v => `
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px;">
+        <div style="width:100px;flex-shrink:0;">${v.nome}</div>
+        <div style="flex:1;height:8px;background:#F0F0EC;border-radius:4px;overflow:hidden;"><div style="width:${(v.fat/maxV)*100}%;height:100%;background:#1A1A1A;"></div></div>
+        <div style="width:90px;text-align:right;color:#6B6B68;font-size:12px;">${fmtBRshort(v.fat)}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ============ RENDER VENDAS ============
+function renderVendas() {
+  document.getElementById('vendas-count').textContent = state.vendas.length.toLocaleString('pt-BR');
+
+  // Filtro de anos
+  const anos = computeAnos();
+  const filterAno = document.getElementById('filterAno');
+  const curr = filterAno.value;
+  filterAno.innerHTML = '<option value="">Todos os anos</option>' + anos.map(a => `<option value="${a}" ${String(a)===curr?'selected':''}>${a}</option>`).join('');
+
+  const term = document.getElementById('searchVendas').value.toLowerCase();
+  const ano = document.getElementById('filterAno').value;
+  let rows = [...state.vendas].sort((a, b) => new Date(b.data) - new Date(a.data));
+  if (term) rows = rows.filter(r => r.cliente.toLowerCase().includes(term) || r.produto.toLowerCase().includes(term));
+  if (ano) rows = rows.filter(r => new Date(r.data).getFullYear() === parseInt(ano));
+
+  const tbody = document.getElementById('vendasTable');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="table-empty">Nenhuma venda registrada ainda</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const nfHtml = r.nf
+      ? `<span class="nf-file" title="${r.nf.name}"><a href="${r.nf.data}" download="${r.nf.name}" style="color:inherit;text-decoration:none;"> ${r.nf.name.length > 18 ? r.nf.name.slice(0,18)+'…' : r.nf.name}</a><span class="x" onclick="removeNF('${r.id}')">✕</span></span>`
+      : `<button class="upload-icon" onclick="document.getElementById('nf-${r.id}').click()" title="Anexar NF (PDF)"></button><input type="file" id="nf-${r.id}" accept="application/pdf" style="display:none;" onchange="uploadNF('${r.id}', event)">`;
+    return `
+      <tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${r.cliente}</td>
+        <td>${r.produto} <span style="color:#6B6B68;">${r.tamanho}</span></td>
+        <td><span class="pill pill-gray">${r.aroma || 'Neutro'}</span></td>
+        <td class="num">${r.qtd}</td>
+        <td class="num">${fmtBR(r.valor)}</td>
+        <td><span class="pill pill-blue">${r.vendedor}</span></td>
+        <td>${nfHtml}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function uploadNF(id, ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Arquivo muito grande (máx 5MB).');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const venda = state.vendas.find(v => v.id === id);
+    if (venda) {
+      venda.nf = { name: file.name, data: reader.result };
+      STORE.save('vendas', state.vendas);
+      renderVendas();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeNF(id) {
+  if (!confirm('Remover a NF anexada?')) return;
+  const venda = state.vendas.find(v => v.id === id);
+  if (venda) {
+    delete venda.nf;
+    STORE.save('vendas', state.vendas);
+    renderVendas();
+  }
+}
+
+// ============ RENDER CLIENTES ============
+function switchClienteTab(tab) {
+  document.querySelectorAll('#view-clientes .subtab').forEach(s => s.classList.toggle('active', s.dataset.subtab === tab));
+  document.getElementById('sub-crm').classList.toggle('hidden', tab !== 'crm');
+  document.getElementById('sub-fiscal').classList.toggle('hidden', tab !== 'fiscal');
+  if (tab === 'fiscal') renderFiscal();
+}
+
+function renderClientes() {
+  const clis = computeClientes();
+  document.getElementById('clientes-count').textContent = clis.length.toLocaleString('pt-BR');
+
+  const ativos = clis.filter(c => c.status === 'Ativo').length;
+  const risco = clis.filter(c => c.status === 'Em Risco').length;
+  const inativos = clis.filter(c => c.status === 'Inativo').length;
+  document.getElementById('c-ativo').textContent = ativos;
+  document.getElementById('c-risco').textContent = risco;
+  document.getElementById('c-inativo').textContent = inativos;
+
+  const term = document.getElementById('searchClientes').value.toLowerCase();
+  const status = document.getElementById('filterStatus').value;
+  let rows = clis;
+  if (term) rows = rows.filter(r => r.nome.toLowerCase().includes(term));
+  if (status) rows = rows.filter(r => r.status === status);
+
+  const tbody = document.getElementById('clientesTable');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Nenhum cliente cadastrado ainda</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(c => `
+    <tr>
+      <td><strong>${c.nome}</strong></td>
+      <td>${c.telefone || '—'}</td>
+      <td>${c.ultima ? fmtDate(c.ultima) : '—'}</td>
+      <td class="num">${fmtBR(c.total)}</td>
+      <td><span class="pill ${pillClass(c.status)}">${c.status}</span></td>
+      <td><button class="btn" style="padding:4px 10px;font-size:11px;" onclick="alert('${c.nome}\\n${c.pedidos} pedidos\\n${c.dias === 999 ? 'Sem compras' : c.dias + ' dias desde a última'}')">Ver</button></td>
+    </tr>
+  `).join('');
+}
+
+function openClienteModal() {
+  document.getElementById('mc-nome').value = '';
+  document.getElementById('mc-tel').value = '';
+  document.getElementById('mc-email').value = '';
+  document.getElementById('modal-cliente').classList.add('show');
+}
+
+function salvarCliente() {
+  const nome = document.getElementById('mc-nome').value.trim();
+  if (!nome) { alert('Informe o nome.'); return; }
+  if (state.clientes.find(c => c.nome.toLowerCase() === nome.toLowerCase())) {
+    alert('Cliente já cadastrado.');
+    return;
+  }
+  state.clientes.push({
+    nome,
+    telefone: document.getElementById('mc-tel').value.trim(),
+    email: document.getElementById('mc-email').value.trim()
+  });
+  STORE.save('clientes', state.clientes);
+  document.getElementById('modal-cliente').classList.remove('show');
+  renderClientes();
+}
+
+function renderFiscal() {
+  const tbody = document.getElementById('fiscalTable');
+  if (state.fiscais.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Nenhum dado fiscal cadastrado ainda</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.fiscais.map((f, i) => `
+    <tr>
+      <td><strong>${f.nome}</strong></td>
+      <td>${f.doc}</td>
+      <td>${f.endereco}</td>
+      <td>${f.cep}</td>
+      <td>${f.cidade}</td>
+      <td><button class="btn" style="padding:4px 10px;font-size:11px;" onclick="removerFiscal(${i})">Remover</button></td>
+    </tr>
+  `).join('');
+}
+
+function openFiscalModal() {
+  ['mf-nome','mf-doc','mf-cep','mf-end','mf-cidade'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-fiscal').classList.add('show');
+}
+
+function salvarFiscal() {
+  const nome = document.getElementById('mf-nome').value.trim();
+  if (!nome) { alert('Informe o cliente.'); return; }
+  state.fiscais.push({
+    nome,
+    doc: document.getElementById('mf-doc').value.trim(),
+    endereco: document.getElementById('mf-end').value.trim(),
+    cep: document.getElementById('mf-cep').value.trim(),
+    cidade: document.getElementById('mf-cidade').value.trim()
+  });
+  STORE.save('fiscais', state.fiscais);
+  document.getElementById('modal-fiscal').classList.remove('show');
+  renderFiscal();
+}
+
+function removerFiscal(i) {
+  if (!confirm('Remover este registro fiscal?')) return;
+  state.fiscais.splice(i, 1);
+  STORE.save('fiscais', state.fiscais);
+  renderFiscal();
+}
+
+// ============ RENDER PRODUTOS ============
+function renderProdutos() {
+  // Agregar vendas para Qtd, Faturamento, Última, Pedidos
+  const aggregate = {};
+  state.vendas.forEach(v => {
+    const k = v.produto + '|' + v.tamanho;
+    if (!aggregate[k]) aggregate[k] = { qtd: 0, fat: 0, pedidos: 0, ultima: null };
+    aggregate[k].qtd += parseInt(v.qtd) || 0;
+    aggregate[k].fat += parseFloat(v.valor) || 0;
+    aggregate[k].pedidos += 1;
+    const dt = new Date(v.data);
+    if (!aggregate[k].ultima || dt > aggregate[k].ultima) aggregate[k].ultima = dt;
+  });
+
+  const tbody = document.getElementById('produtosTable');
+  tbody.innerHTML = state.produtos.map((p, i) => {
+    const k = p.produto + '|' + p.tamanho;
+    const agg = aggregate[k] || { qtd: 0, fat: 0, pedidos: 0, ultima: null };
+    const unCx = getUnCx(p.tamanho);
+    const hasCaixa = unCx > 0;
+    return `
+      <tr>
+        <td><strong>${p.produto}</strong></td>
+        <td>${p.tamanho}</td>
+        <td class="num">${unCx || '—'}</td>
+        <td class="num editable" contenteditable onblur="updateProduto(${i}, 'unitOld', this.textContent)">${p.unitOld ? fmtBR(p.unitOld) : '—'}</td>
+        <td class="num editable" contenteditable onblur="updateProduto(${i}, 'caixaOld', this.textContent)">${hasCaixa && p.caixaOld ? fmtBR(p.caixaOld) : '—'}</td>
+        <td class="num price-2026" contenteditable onblur="updateProduto(${i}, 'unit2026', this.textContent)">${p.unit2026 ? fmtBR(p.unit2026) : '—'}</td>
+        <td class="num price-2026" contenteditable onblur="updateProduto(${i}, 'caixa2026', this.textContent)">${hasCaixa && p.caixa2026 ? fmtBR(p.caixa2026) : '—'}</td>
+        <td class="num">${agg.qtd}</td>
+        <td class="num">${fmtBR(agg.fat)}</td>
+        <td>${agg.ultima ? fmtDate(agg.ultima) : '—'}</td>
+        <td class="num">${agg.pedidos}</td>
+        <td>
+          <select class="form-input" style="padding:4px 8px;font-size:12px;" onchange="updateProduto(${i}, 'aroma', this.value)">
+            <option ${p.aroma==='Neutro'?'selected':''}>Neutro</option>
+            <option ${p.aroma==='Tropical'?'selected':''}>Tropical</option>
+            <option ${p.aroma==='Tutti Frutti'?'selected':''}>Tutti Frutti</option>
+            <option ${p.aroma==='Outro'?'selected':''}>Outro</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateProduto(i, field, val) {
+  if (['unitOld','caixaOld','unit2026','caixa2026'].includes(field)) {
+    const num = parseFloat(String(val).replace(/[^\d,.-]/g, '').replace(',', '.'));
+    state.produtos[i][field] = isNaN(num) ? 0 : num;
+  } else {
+    state.produtos[i][field] = val;
+  }
+  STORE.save('produtos', state.produtos);
+  renderProdutos();
+}
+
+// ============ RENDER TRANSMISSAO ============
+function getListaSegmento(seg) {
+  const clis = computeClientes().filter(c => c.telefone && c.ultima);
+  const today = new Date();
+  if (seg === 'vip') return clis.filter(c => c.dias <= 60);
+  if (seg === 'freq') return clis.filter(c => c.dias <= 90);
+  if (seg === 'risco') return clis.filter(c => c.dias >= 31 && c.dias <= 60);
+  return [];
+}
+
+function renderTransmissao() {
+  document.getElementById('t-vip').textContent = getListaSegmento('vip').length;
+  document.getElementById('t-freq').textContent = getListaSegmento('freq').length;
+  document.getElementById('t-risco').textContent = getListaSegmento('risco').length;
+}
+
+function openTransList(seg) {
+  const lista = getListaSegmento(seg);
+  const titles = { vip: 'VIP — Últimos 60 dias', freq: 'Frequente — Últimos 90 dias', risco: 'Em Risco — 31 a 60 dias' };
+  document.getElementById('trans-list-title').textContent = titles[seg];
+  document.getElementById('trans-list-sub').textContent = lista.length + ' contatos com telefone cadastrado';
+  const body = document.getElementById('trans-list-body');
+  if (lista.length === 0) {
+    body.innerHTML = '<div class="table-empty">Nenhum cliente nesta segmentação com telefone cadastrado</div>';
+  } else {
+    body.innerHTML = lista.map(c => {
+      const tel = (c.telefone || '').replace(/\D/g, '');
+      return `
+        <div class="trans-list-row">
+          <div class="trans-list-info">
+            <strong>${c.nome}</strong>
+            <div class="trans-list-meta">${c.telefone} • Última compra: ${fmtDate(c.ultima)} • ${fmtBR(c.total)}</div>
+          </div>
+          ${tel ? `<a href="https://wa.me/55${tel}" target="_blank" class="whatsapp-link"> WhatsApp</a>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+  document.getElementById('trans-list-card').style.display = 'block';
+}
+
+function copiarLista(seg) {
+  const lista = getListaSegmento(seg);
+  if (lista.length === 0) { alert('Lista vazia.'); return; }
+  const text = lista.map(c => c.telefone).filter(Boolean).join('\n');
+  navigator.clipboard.writeText(text).then(() => alert(lista.length + ' telefones copiados!'));
+}
+
+function exportarCSV(seg) {
+  const lista = getListaSegmento(seg);
+  if (lista.length === 0) { alert('Lista vazia.'); return; }
+  let csv = 'Nome,Telefone,Última compra,Total gasto\n';
+  lista.forEach(c => {
+    csv += `"${c.nome}","${c.telefone}","${fmtDate(c.ultima)}","${fmtBR(c.total)}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lista_${seg}_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+// ============ RENDER REATIVACAO ============
+function renderReativacao() {
+  const inativos = computeClientes().filter(c => c.status === 'Inativo' && c.total > 0).slice(0, 30);
+  const el = document.getElementById('reativacaoList');
+  if (inativos.length === 0) {
+    el.innerHTML = '<div class="table-empty">Nenhum cliente inativo ainda</div>';
+    return;
+  }
+  el.innerHTML = inativos.map(c => `
+    <div class="react-row">
+      <div class="react-info">
+        <strong>${c.nome}</strong>
+        <div class="react-meta">Última compra: ${fmtDate(c.ultima)} • ${c.dias} dias atrás • ${c.pedidos} pedidos no histórico</div>
+      </div>
+      <div class="react-value">${fmtBR(c.total)}</div>
+    </div>
+  `).join('');
+}
+
+// ============ RENDER RELATORIOS ============
+function renderRelatorios() {
+  // Vendedor
+  const vendMap = {};
+  state.vendas.forEach(v => {
+    if (!vendMap[v.vendedor]) vendMap[v.vendedor] = { fat: 0, count: 0 };
+    vendMap[v.vendedor].fat += parseFloat(v.valor) || 0;
+    vendMap[v.vendedor].count += 1;
+  });
+  const vendArr = Object.entries(vendMap).map(([nome, d]) => ({
+    nome, fat: d.fat, count: d.count, ticket: d.fat / d.count
+  })).sort((a, b) => b.fat - a.fat);
+
+  const elVend = document.getElementById('rel-vendedor');
+  if (vendArr.length === 0) {
+    elVend.innerHTML = '<tr><td colspan="5" class="table-empty">Sem dados ainda</td></tr>';
+  } else {
+    elVend.innerHTML = vendArr.map(v => `
+      <tr>
+        <td><strong>${v.nome}</strong></td>
+        <td class="num">${fmtBR(v.fat)}</td>
+        <td class="num">${v.count}</td>
+        <td class="num">${fmtBR(v.ticket)}</td>
+        <td class="num"><span class="arrow-up">—</span></td>
+      </tr>
+    `).join('');
+  }
+
+  // Chart Mensal
+  const mensal = computeMensal();
+  if (chartRelMensalInst) chartRelMensalInst.destroy();
+  const canvasM = document.getElementById('chartRelMensal');
+  if (mensal.length === 0) {
+    canvasM.style.display = 'none';
+    document.getElementById('empty-rel-mensal').classList.remove('hidden');
+  } else {
+    canvasM.style.display = 'block';
+    document.getElementById('empty-rel-mensal').classList.add('hidden');
+    chartRelMensalInst = new Chart(canvasM.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: mensal.map(m => m.mes),
+        datasets: [{ data: mensal.map(m => m.fat), backgroundColor: '#1A1A1A', borderRadius: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // Fiscal donut
+  const comNF = state.vendas.filter(v => v.nf).reduce((s, v) => s + (parseFloat(v.valor) || 0), 0);
+  const semNF = state.vendas.filter(v => !v.nf).reduce((s, v) => s + (parseFloat(v.valor) || 0), 0);
+  if (chartRelFiscalInst) chartRelFiscalInst.destroy();
+  const canvasF = document.getElementById('chartRelFiscal');
+  if (comNF === 0 && semNF === 0) {
+    canvasF.style.display = 'none';
+    document.getElementById('empty-rel-fiscal').classList.remove('hidden');
+  } else {
+    canvasF.style.display = 'block';
+    document.getElementById('empty-rel-fiscal').classList.add('hidden');
+    chartRelFiscalInst = new Chart(canvasF.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Com NF', 'Sem NF'],
+        datasets: [{ data: [comNF, semNF], backgroundColor: ['#1A1A1A', '#B4B2A9'], borderWidth: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
+    });
+  }
+
+  // Top produtos
+  const prodMap = {};
+  state.vendas.forEach(v => {
+    const k = v.produto + '|' + v.tamanho;
+    if (!prodMap[k]) prodMap[k] = { produto: v.produto, tamanho: v.tamanho, qtd: 0, fat: 0, pedidos: 0 };
+    prodMap[k].qtd += parseInt(v.qtd) || 0;
+    prodMap[k].fat += parseFloat(v.valor) || 0;
+    prodMap[k].pedidos += 1;
+  });
+  const topProd = Object.values(prodMap).sort((a, b) => b.fat - a.fat).slice(0, 10);
+  const elProd = document.getElementById('rel-produtos');
+  if (topProd.length === 0) {
+    elProd.innerHTML = '<tr><td colspan="5" class="table-empty">Sem dados ainda</td></tr>';
+  } else {
+    elProd.innerHTML = topProd.map(p => `
+      <tr>
+        <td><strong>${p.produto}</strong></td>
+        <td>${p.tamanho}</td>
+        <td class="num">${p.qtd}</td>
+        <td class="num">${p.pedidos}</td>
+        <td class="num">${fmtBR(p.fat)}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+// ============ RENDER CONFIG ============
+function renderConfig() {
+  const anos = computeAnos();
+  const periodo = anos.length > 0 ? `${Math.min(...anos)} a ${Math.max(...anos)}` : new Date().getFullYear();
+  document.getElementById('cfg-periodo').textContent = periodo;
+  document.getElementById('cfg-clientes').textContent = state.clientes.length;
+  document.getElementById('cfg-vendas').textContent = state.vendas.length;
+  document.getElementById('cfg-contatos').textContent = state.clientes.filter(c => c.telefone).length;
+  document.getElementById('cfg-produtos').textContent = state.produtos.length;
+  document.getElementById('cfg-update').textContent = new Date().toLocaleString('pt-BR');
+}
+
+function baixarBackup() {
+  const data = {
+    user: state.user,
+    vendas: state.vendas,
+    clientes: state.clientes,
+    fiscais: state.fiscais,
+    produtos: state.produtos,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gso_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+}
+
+function restaurarBackup(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  if (!confirm('Isso irá substituir todos os dados atuais. Continuar?')) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (data.vendas) state.vendas = data.vendas;
+      if (data.clientes) state.clientes = data.clientes;
+      if (data.fiscais) state.fiscais = data.fiscais;
+      if (data.produtos) state.produtos = data.produtos;
+      if (data.user) state.user = data.user;
+      STORE.saveAll(state);
+      alert('Backup restaurado com sucesso!');
+      renderAll();
+    } catch (e) {
+      alert('Arquivo inválido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============ RENDER PERFIL ============
+function renderPerfil() {
+  document.getElementById('p-nome').value = state.user.nome;
+  document.getElementById('p-email').value = state.user.email;
+  document.getElementById('p-senha').value = '';
+  document.getElementById('p-senha2').value = '';
+  updateAvatars();
+}
+
+function updateAvatars() {
+  const initial = (state.user.nome || 'U').charAt(0).toUpperCase();
+  const elProf = document.getElementById('profile-avatar');
+  const elSb = document.getElementById('sb-avatar');
+  if (state.user.foto) {
+    elProf.style.backgroundImage = `url(${state.user.foto})`;
+    elProf.textContent = '';
+    elSb.style.backgroundImage = `url(${state.user.foto})`;
+    elSb.textContent = '';
+  } else {
+    elProf.style.backgroundImage = '';
+    elProf.textContent = initial;
+    elSb.style.backgroundImage = '';
+    elSb.textContent = initial;
+  }
+  document.getElementById('sb-name').textContent = (state.user.nome || '').split(' ')[0] || 'Usuário';
+}
+
+function changePhoto(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Arquivo muito grande (máx 2MB).'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.user.foto = reader.result;
+    STORE.save('user', state.user);
+    updateAvatars();
+  };
+  reader.readAsDataURL(file);
+}
+
+function salvarPerfil() {
+  const nome = document.getElementById('p-nome').value.trim();
+  const email = document.getElementById('p-email').value.trim();
+  const s1 = document.getElementById('p-senha').value;
+  const s2 = document.getElementById('p-senha2').value;
+  if (!nome || !email) { alert('Nome e email obrigatórios.'); return; }
+  if (s1 && s1 !== s2) { alert('Senhas não coincidem.'); return; }
+  state.user.nome = nome;
+  state.user.email = email;
+  if (s1) state.user.senha = s1;
+  STORE.save('user', state.user);
+  updateAvatars();
+  alert('Perfil atualizado!');
+}
+
+// ============ NOVA VENDA ============
+function initNova() {
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-cliente').value = '';
+  document.getElementById('f-valor').value = '';
+  document.getElementById('f-obs').value = '';
+  document.getElementById('f-aroma').value = 'Neutro';
+  document.getElementById('f-aroma-custom').value = '';
+  document.getElementById('f-aroma-custom-row').classList.add('hidden');
+
+  // Datalist com clientes
+  const clis = computeClientes();
+  document.getElementById('clientesList').innerHTML = clis.map(c => `<option value="${c.nome}">`).join('');
+  updatePreview();
+}
+
+function toggleAromaCustom() {
+  const isOutro = document.getElementById('f-aroma').value === 'Outro';
+  document.getElementById('f-aroma-custom-row').classList.toggle('hidden', !isOutro);
+}
+
+function updatePreview() {
+  const prod = document.getElementById('f-produto').value;
+  const tam = document.getElementById('f-tamanho').value;
+  const qtd = parseInt(document.getElementById('f-qtd').value) || 1;
+  const p = state.produtos.find(x => x.produto === prod && x.tamanho === tam);
+  let preco = 0;
+  if (p) {
+    const unCx = getUnCx(tam);
+    if (unCx > 0 && qtd >= unCx && p.caixa2026 > 0) {
+      const caixas = Math.floor(qtd / unCx);
+      const resto = qtd % unCx;
+      preco = caixas * p.caixa2026 + resto * p.unit2026;
+    } else {
+      preco = qtd * p.unit2026;
+    }
+  }
+  document.getElementById('precoSugerido').textContent = preco > 0 ? fmtBR(preco) : 'Sem preço cadastrado';
+  if (preco > 0 && !document.getElementById('f-valor').value) {
+    document.getElementById('f-valor').placeholder = preco.toFixed(2).replace('.', ',');
+  }
+}
+
+function salvarVenda() {
+  const cliente = document.getElementById('f-cliente').value.trim();
+  const valor = parseFloat(document.getElementById('f-valor').value);
+  if (!cliente || isNaN(valor) || valor <= 0) {
+    alert('Preencha cliente e valor.');
+    return;
+  }
+
+  // Auto-cadastrar cliente se novo
+  if (!state.clientes.find(c => c.nome.toLowerCase() === cliente.toLowerCase())) {
+    state.clientes.push({ nome: cliente, telefone: '', email: '' });
+    STORE.save('clientes', state.clientes);
+  }
+
+  let aroma = document.getElementById('f-aroma').value;
+  if (aroma === 'Outro') {
+    const custom = document.getElementById('f-aroma-custom').value.trim();
+    if (custom) aroma = custom;
+  }
+
+  const venda = {
+    id: 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    data: document.getElementById('f-data').value,
+    cliente,
+    produto: document.getElementById('f-produto').value,
+    tamanho: document.getElementById('f-tamanho').value,
+    aroma,
+    qtd: parseInt(document.getElementById('f-qtd').value) || 1,
+    valor,
+    pagamento: document.getElementById('f-pag').value,
+    vendedor: document.getElementById('f-vend').value,
+    obs: document.getElementById('f-obs').value.trim()
+  };
+  state.vendas.push(venda);
+  STORE.save('vendas', state.vendas);
+  alert('✅ Venda registrada!\n\n' + cliente + ' — ' + fmtBR(valor));
+  navTo('dash');
+}
+
+// ============ RENDER ALL ============
+function renderAll() {
+  renderDash();
+  updateAvatars();
+}
+
+// ============ INIT ============
+function init() {
+  const session = JSON.parse(localStorage.getItem('gso_session') || 'null');
+  if (session && session.token) {
+    showApp();
+  } else {
+    document.getElementById('login-page').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+
+  // Enter no login
+  document.getElementById('login-pass').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doLogin();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
