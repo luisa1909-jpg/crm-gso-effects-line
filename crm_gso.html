@@ -180,6 +180,20 @@
   .nav-item:hover { background: #262625; color: var(--sidebar-text); }
   .nav-item.active { background: var(--sidebar-text); color: var(--sidebar); font-weight: 600; }
   .nav-ic { width: 14px; height: 14px; flex-shrink: 0; }
+  .nav-alert-dot {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #E53935;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+  }
 
   .sb-spacer { flex: 1; min-height: 12px; }
   .sb-profile {
@@ -244,6 +258,8 @@
   .btn-green { background: var(--green); color: #fff; border-color: var(--green); }
   .btn-green:hover { background: #16a34a; }
   .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
+  .btn-danger { background: #FBDED9; color: var(--red-text); border-color: #f3c7be; }
+  .btn-danger:hover { background: #f9d0c8; }
 
   /* ===== CARDS ===== */
   .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
@@ -523,6 +539,11 @@
       <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>
       Clientes
     </div>
+    <div class="nav-item" data-view="boletos" onclick="navTo('boletos')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
+      Boletos
+      <span class="nav-alert-dot hidden" id="boletos-badge">0</span>
+    </div>
 
     <div class="sb-section">CATÁLOGO</div>
     <div class="nav-item" data-view="produtos" onclick="navTo('produtos')">
@@ -776,6 +797,29 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- ============ BOLETOS ============ -->
+    <div id="view-boletos" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Boletos</div>
+          <div class="h-sub"><span id="boletos-count">0</span> boletos no controle financeiro</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn btn-green" onclick="openBoletoModal()">+ Novo boleto</button>
+        </div>
+      </div>
+      <div class="search">
+        <select class="input" id="filterBoletos" onchange="renderBoletos()">
+          <option value="Todos">Todos</option>
+          <option value="A vencer">A vencer</option>
+          <option value="Vence hoje">Vence hoje</option>
+          <option value="Vencido">Vencidos</option>
+          <option value="Pago">Pagos</option>
+        </select>
+      </div>
+      <div id="boletosList"></div>
     </div>
 
     <!-- ============ PRODUTOS ============ -->
@@ -1226,6 +1270,32 @@
   </div>
 </div>
 
+<!-- ============ MODAL BOLETO ============ -->
+<div class="modal-bg" id="modal-boleto">
+  <div class="modal">
+    <div class="modal-title" id="modal-boleto-title">Novo boleto</div>
+    <input type="hidden" id="mb-id">
+    <div class="form-row form-r2">
+      <div><label class="form-label">Título</label><input type="text" class="form-input" id="mb-titulo"></div>
+      <div><label class="form-label">Fornecedor/Cliente</label><input type="text" class="form-input" id="mb-nome"></div>
+    </div>
+    <div class="form-row"><div><label class="form-label">Descrição</label><input type="text" class="form-input" id="mb-desc"></div></div>
+    <div class="form-row form-r3">
+      <div><label class="form-label">Valor</label><input type="number" class="form-input" id="mb-valor" step="0.01" min="0"></div>
+      <div><label class="form-label">Emissão</label><input type="date" class="form-input" id="mb-emissao"></div>
+      <div><label class="form-label">Vencimento</label><input type="date" class="form-input" id="mb-vencimento"></div>
+    </div>
+    <div class="form-row form-r2">
+      <div><label class="form-label">Status manual</label><select class="form-input" id="mb-status"><option value="">Automático</option><option>A vencer</option><option>Vence hoje</option><option>Vencido</option><option>Pago</option></select></div>
+      <div><label class="form-label">URL PDF</label><input type="url" class="form-input" id="mb-pdf" placeholder="https://...pdf"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="document.getElementById('modal-boleto').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-green" onclick="saveBoleto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============ DATA STORE ============
 const STORE = {
@@ -1239,6 +1309,7 @@ const STORE = {
         foto: null
       })),
       vendas: JSON.parse(localStorage.getItem('gso_vendas') || '[]'),
+      boletos: JSON.parse(localStorage.getItem('gso_boletos') || '[]'),
       clientes: JSON.parse(localStorage.getItem('gso_clientes') || '[]'),
       fiscais: JSON.parse(localStorage.getItem('gso_fiscais') || '[]'),
       produtos: JSON.parse(localStorage.getItem('gso_produtos') || 'null') || defaultProdutos()
@@ -1340,7 +1411,7 @@ function showApp() {
 }
 
 // ============ NAVEGAÇÃO ============
-const VIEWS = ['dash','vendas','clientes','produtos','transmissao','reativacao','relatorios','config','perfil','nova'];
+const VIEWS = ['dash','vendas','clientes','boletos','produtos','transmissao','reativacao','relatorios','config','perfil','nova'];
 function navTo(view) {
   VIEWS.forEach(v => {
     document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
@@ -1354,6 +1425,7 @@ function navTo(view) {
   if (view === 'dash') renderDash();
   if (view === 'vendas') renderVendas();
   if (view === 'clientes') renderClientes();
+  if (view === 'boletos') renderBoletos();
   if (view === 'produtos') renderProdutos();
   if (view === 'transmissao') renderTransmissao();
   if (view === 'reativacao') renderReativacao();
@@ -1940,6 +2012,102 @@ function renderRelatorios() {
   }
 }
 
+// ============ BOLETOS ============
+function boletoStatusAuto(boleto) {
+  if (boleto.pago_em) return { status: 'Pago', diff: 0, frase: 'pago' };
+  const today = new Date(); today.setHours(0,0,0,0);
+  const ven = new Date(boleto.data_vencimento); ven.setHours(0,0,0,0);
+  const diff = daysBetween(today, ven);
+  if (diff > 0) return { status: 'A vencer', diff, frase: `faltam ${diff} dias` };
+  if (diff === 0) return { status: 'Vence hoje', diff, frase: 'vence hoje' };
+  return { status: 'Vencido', diff, frase: `vencido há ${Math.abs(diff)} dias` };
+}
+function boletoWeight(b) {
+  if (b.statusCalc === 'Vencido') return 0;
+  if (b.statusCalc === 'Vence hoje') return 1;
+  if (b.statusCalc === 'A vencer') return 2;
+  return 3;
+}
+function renderBoletos() {
+  const list = document.getElementById('boletosList');
+  const filter = document.getElementById('filterBoletos').value;
+  let rows = state.boletos.map(b => {
+    const calc = b.status === 'Pago' ? { status: 'Pago', diff: 0, frase: 'pago' } : boletoStatusAuto(b);
+    return { ...b, statusCalc: calc.status, diff: calc.diff, frase: calc.frase };
+  });
+  document.getElementById('boletos-count').textContent = rows.length;
+  rows = rows.sort((a,b) => boletoWeight(a)-boletoWeight(b) || a.diff-b.diff || new Date(a.data_vencimento)-new Date(b.data_vencimento));
+  if (filter !== 'Todos') rows = rows.filter(r => r.statusCalc === filter);
+  if (!rows.length) { list.innerHTML = '<div class="card"><div class="table-empty">Nenhum boleto encontrado</div></div>'; updateBoletosBadge(); return; }
+  list.innerHTML = rows.map(b => `
+    <div class="card">
+      <div class="card-h"><div><div class="card-title">${b.titulo}</div><div class="card-sub">${b.nome_fornecedor_cliente || '—'} • Emissão ${fmtDate(b.data_emissao)} • Venc. ${fmtDate(b.data_vencimento)}</div></div><div><span class="pill ${b.statusCalc==='Pago'?'pill-blue':b.statusCalc==='Vencido'?'pill-red':b.statusCalc==='Vence hoje'?'pill-amber':'pill-green'}">${b.statusCalc}</span></div></div>
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;">
+        <div><strong>${fmtBR(b.valor)}</strong> • ${b.frase}<br>${b.descricao || ''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" onclick="openBoletoModal('${b.id}')">Editar</button>
+          <button class="btn btn-green" onclick="markBoletoPago('${b.id}')" ${b.statusCalc==='Pago'?'disabled':''}>Marcar pago</button>
+          <button class="btn" onclick="openBoletoPdf('${b.id}')">Abrir PDF</button>
+          <button class="btn" onclick="downloadBoletoPdf('${b.id}')">Baixar PDF</button>
+          <button class="btn btn-danger" onclick="deleteBoleto('${b.id}')">Excluir</button>
+        </div>
+      </div>
+    </div>`).join('');
+  updateBoletosBadge();
+}
+function updateBoletosBadge() {
+  const n = state.boletos.filter(b => boletoStatusAuto(b).status === 'Vencido' && !b.pago_em).length;
+  const badge = document.getElementById('boletos-badge');
+  badge.textContent = n;
+  badge.classList.toggle('hidden', n === 0);
+}
+function openBoletoModal(id) {
+  const b = state.boletos.find(x => x.id === id);
+  document.getElementById('modal-boleto-title').textContent = b ? 'Editar boleto' : 'Novo boleto';
+  document.getElementById('mb-id').value = b?.id || '';
+  document.getElementById('mb-titulo').value = b?.titulo || '';
+  document.getElementById('mb-desc').value = b?.descricao || '';
+  document.getElementById('mb-nome').value = b?.nome_fornecedor_cliente || '';
+  document.getElementById('mb-valor').value = b?.valor || '';
+  document.getElementById('mb-emissao').value = b?.data_emissao || '';
+  document.getElementById('mb-vencimento').value = b?.data_vencimento || '';
+  document.getElementById('mb-status').value = b?.status || '';
+  document.getElementById('mb-pdf').value = b?.arquivo_pdf_url || '';
+  document.getElementById('modal-boleto').classList.add('show');
+}
+function saveBoleto() {
+  const id = document.getElementById('mb-id').value || ('bol_' + Date.now());
+  const boleto = {
+    id,
+    titulo: document.getElementById('mb-titulo').value.trim(),
+    descricao: document.getElementById('mb-desc').value.trim(),
+    nome_fornecedor_cliente: document.getElementById('mb-nome').value.trim(),
+    valor: parseFloat(document.getElementById('mb-valor').value) || 0,
+    data_emissao: document.getElementById('mb-emissao').value,
+    data_vencimento: document.getElementById('mb-vencimento').value,
+    status: document.getElementById('mb-status').value,
+    arquivo_pdf_url: document.getElementById('mb-pdf').value.trim(),
+    pago_em: ''
+  };
+  if (!boleto.titulo || !boleto.data_vencimento) return alert('Informe título e vencimento.');
+  const idx = state.boletos.findIndex(x => x.id === id);
+  if (idx >= 0) boleto.pago_em = state.boletos[idx].pago_em || '';
+  if (idx >= 0) state.boletos[idx] = boleto; else state.boletos.push(boleto);
+  STORE.save('boletos', state.boletos);
+  document.getElementById('modal-boleto').classList.remove('show');
+  renderBoletos();
+}
+function markBoletoPago(id) {
+  const b = state.boletos.find(x => x.id === id); if (!b) return;
+  b.pago_em = new Date().toISOString().split('T')[0];
+  b.status = 'Pago';
+  STORE.save('boletos', state.boletos); renderBoletos();
+}
+function openBoletoPdf(id) { const b = state.boletos.find(x => x.id === id); if (!b?.arquivo_pdf_url) return alert('Sem PDF cadastrado.'); window.open(b.arquivo_pdf_url, '_blank'); }
+function downloadBoletoPdf(id) { const b = state.boletos.find(x => x.id === id); if (!b?.arquivo_pdf_url) return alert('Sem PDF cadastrado.'); const a = document.createElement('a'); a.href = b.arquivo_pdf_url; a.download = `${b.titulo || 'boleto'}.pdf`; a.click(); }
+function canDeleteBoleto() { return (state.user?.email || '').includes('gsoeffects.com'); }
+function deleteBoleto(id) { if (!canDeleteBoleto()) return alert('Sem permissão para excluir boletos.'); if (!confirm('Excluir boleto?')) return; state.boletos = state.boletos.filter(x => x.id !== id); STORE.save('boletos', state.boletos); renderBoletos(); }
+
 // ============ RENDER CONFIG ============
 function renderConfig() {
   const anos = computeAnos();
@@ -1956,6 +2124,7 @@ function baixarBackup() {
   const data = {
     user: state.user,
     vendas: state.vendas,
+    boletos: state.boletos,
     clientes: state.clientes,
     fiscais: state.fiscais,
     produtos: state.produtos,
@@ -1979,6 +2148,7 @@ function restaurarBackup(ev) {
       const data = JSON.parse(reader.result);
       if (data.vendas) state.vendas = data.vendas;
       if (data.clientes) state.clientes = data.clientes;
+      if (data.boletos) state.boletos = data.boletos;
       if (data.fiscais) state.fiscais = data.fiscais;
       if (data.produtos) state.produtos = data.produtos;
       if (data.user) state.user = data.user;
@@ -2132,6 +2302,8 @@ function salvarVenda() {
 // ============ RENDER ALL ============
 function renderAll() {
   renderDash();
+  renderBoletos();
+  updateBoletosBadge();
   updateAvatars();
 }
 
