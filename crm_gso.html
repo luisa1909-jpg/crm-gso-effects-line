@@ -177,6 +177,23 @@
     margin-bottom: 1px;
     user-select: none;
   }
+  .nav-label { flex: 1; }
+  .nav-badge {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #E53935;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .nav-item.active .nav-badge { background: var(--sidebar); color: var(--sidebar-text); }
   .nav-item:hover { background: #262625; color: var(--sidebar-text); }
   .nav-item.active { background: var(--sidebar-text); color: var(--sidebar); font-weight: 600; }
   .nav-ic { width: 14px; height: 14px; flex-shrink: 0; }
@@ -454,6 +471,10 @@
   /* ===== ARROW ===== */
   .arrow-up { color: var(--green-text); font-weight: 600; }
   .arrow-down { color: var(--red-text); font-weight: 600; }
+  .msg-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #ECECE6; }
+  .msg-item:last-child { border-bottom:none; }
+  .msg-meta { font-size:12px; color:var(--text-2); margin-top:4px; }
+  .msg-count { min-width:22px; height:22px; border-radius:999px; background:#1A1A1A; color:#fff; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
 
   /* ===== RESPONSIVE ===== */
   .menu-toggle { display: none; background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; }
@@ -538,6 +559,11 @@
     <div class="nav-item" data-view="reativacao" onclick="navTo('reativacao')">
       <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 2.5"/></svg>
       Reativação
+    </div>
+    <div class="nav-item" data-view="mensagens" onclick="navTo('mensagens')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M5 6.5h6M5 9.5h4"/></svg>
+      <span class="nav-label">Mensagens</span>
+      <span class="nav-badge hidden" id="msg-badge-nav">0</span>
     </div>
 
     <div class="sb-section">INTELIGÊNCIA</div>
@@ -888,6 +914,25 @@
           </div>
         </div>
         <div id="reativacaoList"><div class="table-empty">Nenhum cliente inativo ainda</div></div>
+      </div>
+    </div>
+
+    <!-- ============ MENSAGENS ============ -->
+    <div id="view-mensagens" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Mensagens</div>
+          <div class="h-sub">Resumo de conversas e pendências de resposta</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Conversas recentes</div>
+            <div class="card-sub">Contadores sincronizados com a badge principal</div>
+          </div>
+        </div>
+        <div id="mensagens-list"></div>
       </div>
     </div>
 
@@ -1340,7 +1385,7 @@ function showApp() {
 }
 
 // ============ NAVEGAÇÃO ============
-const VIEWS = ['dash','vendas','clientes','produtos','transmissao','reativacao','relatorios','config','perfil','nova'];
+const VIEWS = ['dash','vendas','clientes','produtos','transmissao','reativacao','mensagens','relatorios','config','perfil','nova'];
 function navTo(view) {
   VIEWS.forEach(v => {
     document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
@@ -1357,6 +1402,7 @@ function navTo(view) {
   if (view === 'produtos') renderProdutos();
   if (view === 'transmissao') renderTransmissao();
   if (view === 'reativacao') renderReativacao();
+  if (view === 'mensagens') renderMensagens();
   if (view === 'relatorios') renderRelatorios();
   if (view === 'config') renderConfig();
   if (view === 'perfil') renderPerfil();
@@ -1845,6 +1891,51 @@ function renderReativacao() {
   `).join('');
 }
 
+function getMensagensConversations() {
+  return computeClientes()
+    .filter(c => c.total > 0)
+    .slice(0, 10)
+    .map(c => {
+      const unread = c.status === 'Inativo' ? 2 : c.status === 'Em Risco' ? 1 : 0;
+      return { nome: c.nome, ultima: c.ultima, unread };
+    });
+}
+
+function updateMensagensBadgeGlobal() {
+  const conversas = getMensagensConversations();
+  const totalUnread = conversas.reduce((sum, c) => sum + c.unread, 0);
+  const navBadge = document.getElementById('msg-badge-nav');
+  navBadge.textContent = totalUnread;
+  navBadge.classList.toggle('hidden', totalUnread === 0);
+
+  conversas.forEach((c, i) => {
+    const counter = document.getElementById('msg-count-' + i);
+    if (!counter) return;
+    counter.textContent = c.unread;
+    counter.classList.toggle('hidden', c.unread === 0);
+  });
+}
+
+function renderMensagens() {
+  const conversas = getMensagensConversations();
+  const el = document.getElementById('mensagens-list');
+  if (conversas.length === 0) {
+    el.innerHTML = '<div class="table-empty">Sem conversas ainda</div>';
+    updateMensagensBadgeGlobal();
+    return;
+  }
+  el.innerHTML = conversas.map((c, i) => `
+    <div class="msg-item">
+      <div>
+        <strong>${c.nome}</strong>
+        <div class="msg-meta">Última compra: ${fmtDate(c.ultima)}</div>
+      </div>
+      <span class="msg-count ${c.unread === 0 ? 'hidden' : ''}" id="msg-count-${i}">${c.unread}</span>
+    </div>
+  `).join('');
+  updateMensagensBadgeGlobal();
+}
+
 // ============ RENDER RELATORIOS ============
 function renderRelatorios() {
   // Vendedor
@@ -2132,6 +2223,8 @@ function salvarVenda() {
 // ============ RENDER ALL ============
 function renderAll() {
   renderDash();
+  renderMensagens();
+  updateMensagensBadgeGlobal();
   updateAvatars();
 }
 
