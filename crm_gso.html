@@ -6,18 +6,19 @@
 <title>GSO Effects Line — CRM</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --bg: #FAFAF7;
+    --bg: #0B1220;
     --sidebar: #1A1A1A;
     --sidebar-light: #252525;
     --sidebar-text: #ECECEB;
     --sidebar-text-2: #B0B0AE;
-    --card: #FFFFFF;
-    --border: #E8E8E3;
-    --text: #1F1F1E;
-    --text-2: #6B6B68;
-    --primary: #1A1A1A;
+    --card: #121A2A;
+    --border: #23314B;
+    --text: #E8F0FF;
+    --text-2: #A5B2CC;
+    --primary: #2C7BFF;
     --green: #22C55E;
     --green-bg: #E5F2DC;
     --green-text: #2D5C18;
@@ -30,7 +31,7 @@
     --blue-edit: #DAE8F7;
   }
   html, body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
@@ -455,6 +456,23 @@
   .arrow-up { color: var(--green-text); font-weight: 600; }
   .arrow-down { color: var(--red-text); font-weight: 600; }
 
+
+  .msg-unread-badge { margin-left:auto; min-width:20px; padding:2px 6px; border-radius:10px; background:#2C7BFF; color:#fff; font-size:10px; text-align:center; }
+  .msg-layout { display:grid; grid-template-columns:320px 1fr; gap:16px; min-height:62vh; }
+  .msg-sidebar,.msg-chat { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; }
+  .msg-conv-list { margin-top:12px; display:flex; flex-direction:column; gap:8px; max-height:56vh; overflow:auto; }
+  .msg-conv-item { padding:10px; border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:all .2s ease; display:flex; justify-content:space-between; }
+  .msg-conv-item:hover,.msg-conv-item.active { border-color:#2C7BFF; background:#16243D; }
+  .msg-chat { display:flex; flex-direction:column; }
+  .msg-chat-header { padding:8px 4px 12px; border-bottom:1px solid var(--border); font-weight:600; }
+  .msg-thread { flex:1; overflow:auto; padding:12px 4px; display:flex; flex-direction:column; gap:10px; }
+  .msg-bubble { max-width:70%; padding:10px 12px; border-radius:12px; background:#1A2438; animation:fadeIn .2s ease; }
+  .msg-bubble.me { margin-left:auto; background:#2C7BFF; }
+  .msg-meta { font-size:10px; opacity:.85; margin-top:6px; }
+  .msg-compose { border-top:1px solid var(--border); display:grid; grid-template-columns:1fr auto auto auto; gap:8px; padding-top:10px; }
+  .msg-attach-preview { font-size:12px; padding:8px; border:1px dashed #2C7BFF; border-radius:8px; margin-bottom:8px; }
+  @keyframes fadeIn { from {opacity:0; transform:translateY(4px);} to {opacity:1; transform:translateY(0);} }
+
   /* ===== RESPONSIVE ===== */
   .menu-toggle { display: none; background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; }
   @media (max-width: 900px) {
@@ -469,6 +487,9 @@
     .row-2, .row-2-equal, .row-3, .trans-grid { grid-template-columns: 1fr; }
     .form-r2, .form-r3, .form-r3-eq, .form-r4 { grid-template-columns: 1fr; }
     .header { flex-direction: column; align-items: flex-start; }
+    .msg-layout { grid-template-columns:1fr; }
+    .msg-sidebar { max-height:40vh; }
+    .msg-bubble { max-width:86%; }
   }
 </style>
 </head>
@@ -538,6 +559,12 @@
     <div class="nav-item" data-view="reativacao" onclick="navTo('reativacao')">
       <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 2.5"/></svg>
       Reativação
+    </div>
+
+
+    <div class="nav-item" data-view="mensagens" onclick="navTo('mensagens')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h12v8H6l-4 3V3z"/></svg>
+      Mensagens <span id="navMensagensBadge" class="msg-unread-badge hidden">0</span>
     </div>
 
     <div class="sb-section">INTELIGÊNCIA</div>
@@ -891,6 +918,27 @@
       </div>
     </div>
 
+    <div id="view-mensagens" class="hidden">
+      <div class="header"><div><div class="h-title">Mensagens</div><div class="h-sub">Central de conversas e histórico</div></div></div>
+      <div class="msg-layout">
+        <aside class="msg-sidebar">
+          <input id="msgSearch" class="form-input" placeholder="Buscar conversa..." oninput="renderMensagens()">
+          <div id="msgConversations" class="msg-conv-list"></div>
+        </aside>
+        <section class="msg-chat">
+          <div id="msgHeader" class="msg-chat-header"></div>
+          <div id="msgThread" class="msg-thread"></div>
+          <div id="msgAttachmentPreview" class="msg-attach-preview hidden"></div>
+          <div class="msg-compose">
+            <input id="msgInput" class="form-input" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendMensagem()}">
+            <label class="btn" for="msgFile">Anexar</label>
+            <input id="msgFile" type="file" accept="image/*,application/pdf" style="display:none" onchange="onMensagemAnexo(event)">
+            <button class="btn btn-primary" onclick="sendMensagem()">Enviar</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <!-- ============ RELATORIOS ============ -->
     <div id="view-relatorios" class="hidden">
       <div class="header">
@@ -1241,6 +1289,10 @@ const STORE = {
       vendas: JSON.parse(localStorage.getItem('gso_vendas') || '[]'),
       clientes: JSON.parse(localStorage.getItem('gso_clientes') || '[]'),
       fiscais: JSON.parse(localStorage.getItem('gso_fiscais') || '[]'),
+      conversas: JSON.parse(localStorage.getItem('gso_conversas') || '[]'),
+      mensagens: JSON.parse(localStorage.getItem('gso_mensagens') || '[]'),
+      anexos: JSON.parse(localStorage.getItem('gso_anexos') || '{}'),
+      leituras: JSON.parse(localStorage.getItem('gso_leituras') || '{}'),
       produtos: JSON.parse(localStorage.getItem('gso_produtos') || 'null') || defaultProdutos()
     };
   },
@@ -1340,7 +1392,7 @@ function showApp() {
 }
 
 // ============ NAVEGAÇÃO ============
-const VIEWS = ['dash','vendas','clientes','produtos','transmissao','reativacao','relatorios','config','perfil','nova'];
+const VIEWS = ['dash','vendas','clientes','produtos','transmissao','reativacao','mensagens','relatorios','config','perfil','nova'];
 function navTo(view) {
   VIEWS.forEach(v => {
     document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
@@ -1357,11 +1409,42 @@ function navTo(view) {
   if (view === 'produtos') renderProdutos();
   if (view === 'transmissao') renderTransmissao();
   if (view === 'reativacao') renderReativacao();
+  if (view === 'mensagens') renderMensagens();
   if (view === 'relatorios') renderRelatorios();
   if (view === 'config') renderConfig();
   if (view === 'perfil') renderPerfil();
   if (view === 'nova') initNova();
 }
+
+
+const PERMISSOES_CONVERSA = {
+  admin: () => true,
+  comum: (user, target) => ['admin','gso'].includes(target.role)
+};
+state.usuario = state.usuario || { nome:'Luísa', role:'admin' };
+state.anexoAtual = null;
+if (!state.conversas.length) state.conversas = [{id:'c1',nome:'Admin',role:'admin'},{id:'c2',nome:'Time GSO',role:'gso'},{id:'c3',nome:'Cliente VIP',role:'cliente'}];
+function podeConversar(target){ const fn=PERMISSOES_CONVERSA[state.usuario.role] || (()=>false); return fn(state.usuario,target); }
+function unreadCountConv(conv){ const last = state.leituras[conv.id] || 0; return state.mensagens.filter(m=>m.convId===conv.id && !m.fromMe && m.ts>last).length; }
+function updateBadgeMensagens(){ const total = state.conversas.reduce((s,c)=>s+unreadCountConv(c),0); const el=document.getElementById('navMensagensBadge'); el.textContent=total; el.classList.toggle('hidden', total===0); }
+function renderMensagens(){
+  const term=(document.getElementById('msgSearch')?.value||'').toLowerCase();
+  const list=document.getElementById('msgConversations'); if(!list) return;
+  const convs=state.conversas.filter(c=>podeConversar(c) && c.nome.toLowerCase().includes(term));
+  if(!state.conversaAtivaId && convs[0]) state.conversaAtivaId=convs[0].id;
+  list.innerHTML=convs.map(c=>`<div class="msg-conv-item ${c.id===state.conversaAtivaId?'active':''}" onclick="abrirConversa('${c.id}')"><span>${c.nome}</span><span class="msg-unread-badge ${unreadCountConv(c)?'':'hidden'}">${unreadCountConv(c)}</span></div>`).join('') || '<div class="table-empty">Nenhuma conversa disponível</div>';
+  const active=convs.find(c=>c.id===state.conversaAtivaId);
+  document.getElementById('msgHeader').textContent=active?active.nome:'Sem conversa';
+  const thread=document.getElementById('msgThread');
+  if(!active){ thread.innerHTML=''; updateBadgeMensagens(); return; }
+  const msgs=state.mensagens.filter(m=>m.convId===active.id).sort((a,b)=>a.ts-b.ts);
+  thread.innerHTML=msgs.map(m=>`<div class="msg-bubble ${m.fromMe?'me':''}">${m.text||''}${m.anexo?`<div><a href="${m.anexo.data}" target="_blank">📎 ${m.anexo.name}</a></div>`:''}<div class="msg-meta">${new Date(m.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} • ${m.status}</div></div>`).join('');
+  autoScrollMensagens(); updateBadgeMensagens();
+}
+function abrirConversa(id){ state.conversaAtivaId=id; state.leituras[id]=Date.now(); STORE.save('leituras',state.leituras); renderMensagens(); }
+function onMensagemAnexo(ev){ const f=ev.target.files[0]; if(!f) return; const okType=f.type.startsWith('image/')||f.type==='application/pdf'; if(!okType){alert('Tipo inválido. Apenas imagem ou PDF.'); ev.target.value=''; return;} if(f.size>8*1024*1024){alert('Arquivo maior que 8MB.'); ev.target.value=''; return;} const r=new FileReader(); r.onload=()=>{ state.anexoAtual={name:f.name,type:f.type,size:f.size,data:r.result}; document.getElementById('msgAttachmentPreview').classList.remove('hidden'); document.getElementById('msgAttachmentPreview').textContent=`Anexo: ${f.name}`; }; r.readAsDataURL(f);} 
+function sendMensagem(){ const input=document.getElementById('msgInput'); const text=input.value.trim(); if(!text && !state.anexoAtual) return; const m={id:'m'+Date.now(),convId:state.conversaAtivaId,text,anexo:state.anexoAtual,ts:Date.now(),fromMe:true,status:'enviado'}; state.mensagens.push(m); input.value=''; state.anexoAtual=null; document.getElementById('msgFile').value=''; document.getElementById('msgAttachmentPreview').classList.add('hidden'); STORE.save('mensagens',state.mensagens); setTimeout(()=>{m.status='visualizado'; STORE.save('mensagens',state.mensagens); renderMensagens();},600); renderMensagens(); }
+function autoScrollMensagens(){ const t=document.getElementById('msgThread'); if(t) t.scrollTop=t.scrollHeight; }
 
 // ============ COMPUTAÇÕES ============
 function computeClientes() {
