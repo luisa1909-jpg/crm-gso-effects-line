@@ -17779,7 +17779,8 @@ function computeClientes() {
 function computeMensal() {
   const map = {};
   state.vendas.forEach(v => {
-    const d = new Date(v.data);
+    const d = dashboardDateObj(v.data);
+    if (!d) return;
     const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     map[key] = (map[key] || 0) + (parseFloat(v.valor) || 0);
   });
@@ -17788,7 +17789,7 @@ function computeMensal() {
 
 function computeAnos() {
   const set = new Set();
-  state.vendas.forEach(v => set.add(new Date(v.data).getFullYear()));
+  state.vendas.forEach(v => { const d = dashboardDateObj(v.data); if (d) set.add(d.getFullYear()); });
   return [...set].sort().reverse();
 }
 
@@ -18473,7 +18474,7 @@ function renderVendas() {
     (r.pagamento || '').toLowerCase().includes(term)
   );
   if (dataFiltro) rows = rows.filter(r => dashboardDateKey(r.data) === dataFiltro);
-  if (ano) rows = rows.filter(r => new Date(r.data).getFullYear() === parseInt(ano));
+  if (ano) rows = rows.filter(r => (dashboardDateObj(r.data)?.getFullYear()) === parseInt(ano));
   if (produtoFiltro) rows = rows.filter(r => vendaMatchesProductFilter(r, produtoFiltro));
   if (aromaFiltro) rows = rows.filter(r => saleAromaValues(r).some(aroma => nameKey(aroma) === nameKey(aromaFiltro)));
   if (pagamentoFiltro) rows = rows.filter(r => canonicalPayment(r.pagamento || '') === pagamentoFiltro);
@@ -23430,13 +23431,13 @@ let intelPeriod = 'all';
 function intelVendas() {
   if (intelPeriod === 'all') return state.vendas;
   return state.vendas.filter(function (v) {
-    var d = new Date(v.data);
-    return !isNaN(d.getTime()) && String(d.getFullYear()) === String(intelPeriod);
+    var d = dashboardDateObj(v.data);
+    return d && String(d.getFullYear()) === String(intelPeriod);
   });
 }
 function intelYears() {
   var s = {};
-  state.vendas.forEach(function (v) { var d = new Date(v.data); if (!isNaN(d.getTime())) s[d.getFullYear()] = 1; });
+  state.vendas.forEach(function (v) { var d = dashboardDateObj(v.data); if (d) s[d.getFullYear()] = 1; });
   return Object.keys(s).sort(function (a, b) { return b - a; });
 }
 function intelAggProdutos() {
