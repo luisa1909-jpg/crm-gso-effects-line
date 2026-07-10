@@ -15043,6 +15043,10 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
   </div>
 </div>
 
+<!-- ============ SEGMENTOS: DRAWER LATERAL ============ -->
+<div class="intel-seg-scrim" id="intel-seg-scrim" onclick="closeSegDrawer()"></div>
+<div class="intel-seg-drawer" id="intel-seg-drawer"><div id="intel-seg-drawer-body"></div></div>
+
 <!-- ============ MODAL BOLETO ============ -->
 <div class="modal-bg" id="modal-boleto">
   <div class="modal modal-wide">
@@ -23440,6 +23444,24 @@ init();
 .intel-seg-bar { height: 5px; border-radius: 999px; margin-top: 10px; background: var(--surface-2,#eef3f7); overflow: hidden; }
 .intel-seg-bar > div { height: 100%; border-radius: 999px; }
 
+.intel-grid.cols-auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.intel-segcard { cursor: pointer; border-left: 3px solid var(--c); transition: transform .14s, box-shadow .14s; }
+.intel-segcard:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.10); }
+.intel-segcard-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 7px; vertical-align: middle; }
+.intel-seg-note { font-size: 12px; color: var(--text-2); margin: -6px 0 0; }
+
+.intel-seg-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
+.intel-seg-scrim.on { opacity: 1; pointer-events: auto; }
+.intel-seg-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(560px, 94vw); background: var(--surface); border-left: 1px solid var(--border); z-index: 61; transform: translateX(100%); transition: transform .26s cubic-bezier(.4,0,.2,1); overflow: auto; box-shadow: -20px 0 50px rgba(0,0,0,.35); }
+.intel-seg-drawer.on { transform: translateX(0); }
+.intel-seg-dh { padding: 22px 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 2; }
+.intel-seg-close { position: absolute; top: 18px; right: 20px; background: var(--surface-2,#eef3f7); border: 1px solid var(--border); color: var(--text-2); width: 32px; height: 32px; border-radius: 9px; cursor: pointer; font-size: 15px; line-height: 1; }
+.intel-seg-close:hover { color: var(--text); }
+.intel-seg-dname { font-family: 'Manrope','Inter',sans-serif; font-weight: 800; font-size: 21px; letter-spacing: -.01em; padding-right: 40px; }
+.intel-seg-dsub { color: var(--text-2); font-size: 13px; margin-top: 5px; }
+.intel-seg-dbody { padding: 20px 24px 40px; }
+.intel-seg-advice { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.55; }
+
 body.theme-dark .intel-table th { background: rgba(156, 156, 156,0.10); }
 body.theme-dark .intel-table tbody tr:hover td { background: rgba(156, 156, 156,0.08); }
 body.theme-dark .intel-score-bar, body.theme-dark .intel-seg-bar { background: rgba(255,255,255,0.08); }
@@ -23649,10 +23671,9 @@ function intelCompute(force) {
   let accC = 0;
   clientes.forEach(c => { accC += c.total; const pct = accC / totalGeral; c.abc = pct <= 0.80 ? 'A' : (pct <= 0.95 ? 'B' : 'C'); });
 
-  // Limiar VIP (faturamento do corte dos 20% superiores por contagem)
-  const vivos = clientes.filter(c => c.total > 0);
-  const idxVip = Math.max(0, Math.floor(vivos.length * 0.2) - 1);
-  const vipThreshold = vivos.length ? vivos[Math.min(idxVip, vivos.length - 1)].total : Infinity;
+  // Percentil de faturamento por cliente (usado na segmentação RFM abaixo)
+  const totaisOrdenados = clientes.map(c => c.total).sort((a, b) => a - b);
+  const percentilDe = v => { let lo = 0; for (const m of totaisOrdenados) { if (m <= v) lo++; } return totaisOrdenados.length ? lo / totaisOrdenados.length : 0; };
 
   const maxTotal = Math.max(1, ...clientes.map(c => c.total));
   clientes.forEach(c => {
@@ -23671,12 +23692,19 @@ function intelCompute(force) {
     }
     c.score = urgencia * 0.65 + mNorm * 0.35;
     c.acao = acao; c.motivo = motivo;
-    if (c.status === 'Inativo') c.segmento = 'Win-back';
-    else if (c.status === 'Em Risco') c.segmento = 'Em Risco';
-    else if (c.total >= vipThreshold && c.total > 0) c.segmento = 'VIP';
-    else if (c.pedidos >= 4) c.segmento = 'Frequente';
-    else if (c.pedidos <= 1 && c.dias <= 45) c.segmento = 'Novo';
-    else c.segmento = 'Ativo';
+
+    // Segmentação RFM (Recência / Frequência / Valor) — 7 perfis de carteira
+    const r = c.dias, f = c.pedidos, mpct = percentilDe(c.total);
+    c.mpct = mpct;
+    const altoValor = mpct >= 0.8, medioValor = mpct >= 0.55;
+    if (f === 1 && r <= 45) c.segmento = 'Novo';
+    else if (f >= 4 && r <= 45) c.segmento = 'Campeão';
+    else if (f >= 3 && r <= 90) c.segmento = 'Leal';
+    else if ((altoValor || medioValor) && r > 45 && r <= 120) c.segmento = 'Em Risco';
+    else if (f >= 2 && r > 120 && r <= 240) c.segmento = 'Hibernando';
+    else if (r > 240) c.segmento = 'Perdido';
+    else if (r <= 90) c.segmento = 'Potencial';
+    else c.segmento = 'Hibernando';
   });
 
   const faturamento = clientes.reduce((s, c) => s + c.total, 0);
@@ -24010,42 +24038,67 @@ function intelRenderProdutos() {
   document.getElementById('intel-q-prod').dataset.tbl = 'intel-tbl-produtos';
 }
 
+const INTEL_SEGDEF = [
+  { nome: 'Campeão', cor: '#2E9E8F', desc: 'Compram muito e há pouco tempo. Seu núcleo — proteja.' },
+  { nome: 'Leal', cor: 'var(--green-text)', desc: 'Compram com frequência. Mantenha o relacionamento.' },
+  { nome: 'Potencial', cor: '#5B7FD9', desc: 'Recentes, podem virar leais com estímulo.' },
+  { nome: 'Novo', cor: 'var(--blue-text)', desc: 'Primeira compra recente. Cause boa impressão.' },
+  { nome: 'Em Risco', cor: 'var(--amber-text)', desc: 'Já foram bons, estão esfriando. Aja agora.' },
+  { nome: 'Hibernando', cor: '#9B6FD9', desc: 'Inativos de médio prazo. Reative com oferta.' },
+  { nome: 'Perdido', cor: 'var(--red-text)', desc: 'Mais de 8 meses sem comprar. Recuperar é difícil.' }
+];
+
 function intelRenderSegmentos() {
   const pane = document.getElementById('intel-pane');
   const d = intelCompute();
   const lista = d.clientes.filter(c => c.pedidos > 0);
   if (!lista.length) { pane.innerHTML = '<div class="card"><div class="intel-empty">Sem clientes para segmentar.</div></div>'; return; }
 
-  const defs = [
-    { nome: 'VIP', cor: 'var(--primary)', desc: 'Top 20% em faturamento, ativos' },
-    { nome: 'Frequente', cor: 'var(--green-text)', desc: '4+ pedidos, compra com regularidade' },
-    { nome: 'Novo', cor: 'var(--blue-text)', desc: 'Primeira compra recente (até 45d)' },
-    { nome: 'Ativo', cor: 'var(--primary-light)', desc: 'Comprou nos últimos 30 dias' },
-    { nome: 'Em Risco', cor: 'var(--amber-text)', desc: '31–60 dias sem comprar' },
-    { nome: 'Win-back', cor: 'var(--red-text)', desc: 'Mais de 60 dias — reativar' }
-  ];
+  const defs = INTEL_SEGDEF;
   const bySeg = {}; defs.forEach(s => bySeg[s.nome] = []);
   lista.forEach(c => { (bySeg[c.segmento] || (bySeg[c.segmento] = [])).push(c); });
-  const maxCount = Math.max(1, ...defs.map(s => (bySeg[s.nome] || []).length));
 
   const cards = defs.map(s => {
     const arr = bySeg[s.nome] || [];
     const fat = arr.reduce((sum, c) => sum + c.total, 0);
-    return `<div class="card">
-      <div class="intel-seg-head"><span class="intel-seg-name">${s.nome}</span><span class="intel-seg-count" style="color:${s.cor};">${arr.length}</span></div>
+    return `<div class="card intel-segcard" style="--c:${s.cor};" onclick="openSegDrawer('${s.nome.replace(/'/g, "\\'")}')">
+      <div class="intel-seg-head"><span class="intel-seg-name"><span class="intel-segcard-dot"></span>${s.nome}</span><span class="intel-seg-count" style="color:${s.cor};">${arr.length}</span></div>
       <div class="intel-seg-desc">${s.desc}</div>
-      <div class="intel-seg-desc" style="margin-top:4px;">${fmtBR(fat)} em faturamento</div>
-      <div class="intel-seg-bar"><div style="width:${(arr.length / maxCount) * 100}%;background:${s.cor};"></div></div>
+      <div class="intel-seg-desc" style="margin-top:4px;">Faturamento: <strong style="color:var(--text);">${fmtBR(fat)}</strong></div>
     </div>`;
   }).join('');
+
+  // Curva ABC (Pareto): % acumulado de faturamento pelos clientes ordenados do maior para o menor
+  const sortedByTotal = lista.slice().sort((a, b) => b.total - a.total);
+  const totalGeralPareto = sortedByTotal.reduce((s, c) => s + c.total, 0) || 1;
+  let acumulado = 0;
+  const paretoPontos = sortedByTotal.map((c, i) => {
+    acumulado += c.total;
+    return { x: (i + 1) / sortedByTotal.length * 100, y: acumulado / totalGeralPareto * 100 };
+  });
+  const idx80 = paretoPontos.findIndex(p => p.y >= 80);
+  const pctCli80 = idx80 >= 0 ? (idx80 + 1) / sortedByTotal.length * 100 : 100;
 
   const segOrder = defs.map(s => s.nome);
   const rows = lista.slice().sort((a, b) => (segOrder.indexOf(a.segmento) - segOrder.indexOf(b.segmento)) || (b.total - a.total));
   const selOptions = ['<option value="">Todos os segmentos</option>'].concat(defs.map(s => `<option value="${s.nome}">${s.nome}</option>`)).join('');
 
   pane.innerHTML = `
-    <div class="intel-grid cols-3" style="margin-bottom:16px;">${cards}</div>
-    <div class="card">
+    <div class="intel-grid cols-auto" style="margin-bottom:16px;">${cards}</div>
+    <div class="intel-grid cols-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Curva ABC (Pareto) de clientes</div>
+        <div class="card-sub">~${pctCli80.toFixed(0)}% dos clientes geram 80% do faturamento</div>
+        <div class="intel-chart-wrap"><canvas id="intel-chart-pareto"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Faturamento por segmento</div>
+        <div class="card-sub">Onde está concentrado o valor</div>
+        <div class="intel-chart-wrap"><canvas id="intel-chart-segbar"></canvas></div>
+      </div>
+    </div>
+    <div class="intel-seg-note">Clique num segmento acima para ver a estratégia sugerida e contatar os clientes dele.</div>
+    <div class="card" style="margin-top:16px;">
       <div class="card-title">Base segmentada</div>
       <div class="card-sub">Use como lista de transmissão — clique para abrir o WhatsApp do cliente.</div>
       ${intelToolbar('intel-q-seg', 'Buscar cliente...', `<select class="intel-select" onchange="intelFilterColumn('intel-tbl-segmentos','seg',this.value)">${selOptions}</select>`)}
@@ -24078,7 +24131,90 @@ function intelRenderSegmentos() {
     </div>
   `;
   document.getElementById('intel-q-seg').dataset.tbl = 'intel-tbl-segmentos';
+
+  const _dark = document.body.classList.contains('theme-dark');
+  const _grid = _dark ? 'rgba(255,255,255,0.07)' : 'rgba(36, 36, 36,0.07)';
+  const _tick = _dark ? '#9a9a9a' : '#717171';
+  try {
+    const ctxP = document.getElementById('intel-chart-pareto').getContext('2d');
+    intelCharts.pareto = new Chart(ctxP, {
+      type: 'line',
+      data: { datasets: [{ data: paretoPontos, borderColor: '#2E9E8F', backgroundColor: 'rgba(46,158,143,.12)', fill: true, pointRadius: 0, tension: .2, borderWidth: 2 }] },
+      options: {
+        maintainAspectRatio: false, parsing: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: i => `${Math.round(i[0].parsed.x)}% dos clientes`, label: c => ' ' + c.parsed.y.toFixed(0) + '% do faturamento' } } },
+        scales: {
+          x: { type: 'linear', min: 0, max: 100, grid: { display: false }, title: { display: true, text: '% dos clientes (maiores → menores)', color: _tick, font: { size: 11 } }, ticks: { stepSize: 20, color: _tick, callback: v => v + '%' } },
+          y: { min: 0, max: 100, grid: { color: _grid }, ticks: { color: _tick, callback: v => v + '%' } }
+        }
+      }
+    });
+  } catch (e) {}
+  try {
+    const segTotais = defs.map(s => (bySeg[s.nome] || []).reduce((sum, c) => sum + c.total, 0));
+    const segCores = defs.map(s => {
+      const el = document.createElement('div'); el.style.color = s.cor; document.body.appendChild(el);
+      const resolved = getComputedStyle(el).color; document.body.removeChild(el); return resolved;
+    });
+    const ctxS = document.getElementById('intel-chart-segbar').getContext('2d');
+    intelCharts.segbar = new Chart(ctxS, {
+      type: 'bar',
+      data: { labels: defs.map(s => s.nome), datasets: [{ data: segTotais, backgroundColor: segCores, borderRadius: 7, maxBarThickness: 30 }] },
+      options: {
+        indexAxis: 'y', maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmtBR(c.parsed.x) } } },
+        scales: {
+          x: { grid: { color: _grid }, ticks: { color: _tick, callback: v => fmtBRshort(v) } },
+          y: { grid: { display: false }, ticks: { color: _tick } }
+        }
+      }
+    });
+  } catch (e) {}
 }
+
+function openSegDrawer(segNome) {
+  const d = intelCompute();
+  const sd = INTEL_SEGDEF.find(s => s.nome === segNome);
+  if (!sd) return;
+  const lista = d.clientes.filter(c => c.pedidos > 0 && c.segmento === segNome).sort((a, b) => b.total - a.total);
+  const totalSeg = lista.reduce((s, c) => s + c.total, 0);
+  const body = document.getElementById('intel-seg-drawer-body');
+  body.innerHTML = `
+    <div class="intel-seg-dh">
+      <button class="intel-seg-close" onclick="closeSegDrawer()">✕</button>
+      <div class="intel-seg-dname"><span class="intel-segcard-dot" style="background:${sd.cor};"></span>${escapeHtml(sd.nome)}</div>
+      <div class="intel-seg-dsub">${lista.length} cliente(s) · ${fmtBR(totalSeg)}</div>
+    </div>
+    <div class="intel-seg-dbody">
+      <div class="intel-seg-advice" style="background:color-mix(in srgb, ${sd.cor} 14%, transparent);border-color:color-mix(in srgb, ${sd.cor} 35%, transparent);">
+        <strong style="color:${sd.cor};">Estratégia.</strong> ${escapeHtml(sd.desc)}
+      </div>
+      ${lista.length ? `<div class="tbl-wrap" style="margin-top:16px;overflow:auto;"><table class="intel-table"><thead><tr>
+        <th>Cliente</th><th class="num">Gasto</th><th class="num">Dias</th><th>Favorito</th><th>Contato</th>
+      </tr></thead><tbody>
+        ${lista.slice(0, 200).map(c => {
+          const wa = intelWaDigits(c.telefone);
+          const waBtn = wa ? `<a class="intel-wa" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(intelWaMessage(c))}">WhatsApp</a>` : `<span class="intel-wa is-disabled">Sem telefone</span>`;
+          return `<tr>
+            <td class="strong">${escapeHtml(c.nome)}</td>
+            <td class="num">${fmtBR(c.total)}</td>
+            <td class="num">${c.dias}</td>
+            <td class="intel-muted">${escapeHtml(c.favProdValido ? c.favProd : '—')}</td>
+            <td>${waBtn}</td>
+          </tr>`;
+        }).join('')}
+      </tbody></table></div>` : `<div class="intel-empty" style="margin-top:16px;">Nenhum cliente neste segmento.</div>`}
+    </div>
+  `;
+  document.getElementById('intel-seg-drawer').classList.add('on');
+  document.getElementById('intel-seg-scrim').classList.add('on');
+}
+function closeSegDrawer() {
+  const dr = document.getElementById('intel-seg-drawer'), sc = document.getElementById('intel-seg-scrim');
+  if (dr) dr.classList.remove('on');
+  if (sc) sc.classList.remove('on');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSegDrawer(); });
 
 /* ============================ CONTROLE ============================ */
 function intelRenderVendedores() {
