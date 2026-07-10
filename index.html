@@ -17453,8 +17453,8 @@ function aggregateCatalogSales() {
       aggregate[key].qtd += item.qtd;
       aggregate[key].fat += item.fat;
       aggregate[key].pedidos += 1;
-      const dt = new Date(item.data);
-      if (!aggregate[key].ultima || dt > aggregate[key].ultima) aggregate[key].ultima = dt;
+      const dt = dashboardDateObj(item.data);
+      if (dt && (!aggregate[key].ultima || dt > aggregate[key].ultima)) aggregate[key].ultima = dt;
     });
   });
   return aggregate;
@@ -20096,8 +20096,8 @@ function gerarCatalogoEstoque() {
 
 // ============ RENDER TRANSMISSAO ============
 function validSaleDate(value) {
-  const date = new Date(value);
-  return isNaN(date) ? null : date;
+  const date = dashboardDateObj(value);
+  return date;
 }
 
 function monthKey(date) {
@@ -23448,7 +23448,7 @@ function intelAggProdutos() {
         var key = it.produto + '|' + (it.tamanho || '');
         if (!agg[key]) agg[key] = { produto: it.produto, tamanho: it.tamanho, qtd: 0, fat: 0, pedidos: 0, ultima: null };
         agg[key].qtd += it.qtd || 0; agg[key].fat += it.fat || 0; agg[key].pedidos += 1;
-        var d = new Date(it.data || v.data); if (!agg[key].ultima || d > agg[key].ultima) agg[key].ultima = d;
+        var d = dashboardDateObj(it.data || v.data); if (d && (!agg[key].ultima || d > agg[key].ultima)) agg[key].ultima = d;
       });
     } catch (e) {}
   });
@@ -24443,7 +24443,13 @@ function gsoIntelExport() {
 /* data/hora da tabela de Vendas em duas linhas próprias (sem quebra incorreta) */
 window.gsoDateCell = function (d) {
   if (!d) return '\u2014';
-  var dt = (typeof d === 'string') ? new Date(d) : d;
+  var dt;
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
+    var parts = d.trim().split('-').map(Number);
+    dt = new Date(parts[0], parts[1] - 1, parts[2]);
+  } else {
+    dt = (typeof d === 'string') ? new Date(d) : d;
+  }
   if (isNaN(dt)) return String(d);
   var data = dt.toLocaleDateString('pt-BR');
   var hasTime = false;
