@@ -23462,6 +23462,33 @@ init();
 .intel-seg-dbody { padding: 20px 24px 40px; }
 .intel-seg-advice { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.55; }
 
+.intel-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; }
+.intel-chip { background: var(--surface-2,#eef3f7); border: 1px solid var(--border); color: var(--text-2); padding: 7px 13px; border-radius: 20px; font-size: 12.5px; cursor: pointer; font-weight: 500; }
+.intel-chip:hover { color: var(--text); }
+.intel-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.intel-acts { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.intel-actcard { display: flex; flex-direction: column; gap: 12px; position: relative; border-left: 3px solid var(--primary); }
+.intel-actcard.u-hi { border-left-color: var(--red-text); }
+.intel-actcard.u-md { border-left-color: var(--amber-text); }
+.intel-actcard.u-lo { border-left-color: var(--primary); }
+.intel-actcard.intel-done { opacity: .5; }
+.intel-actcard-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.intel-actcard-nm { font-weight: 700; font-size: 15.5px; line-height: 1.25; }
+.intel-actcard-meta { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+.intel-actcard-score { font-weight: 800; font-size: 13px; color: var(--primary); background: var(--surface-2,#eef3f7); padding: 3px 9px; border-radius: 8px; white-space: nowrap; }
+.intel-actcard-why { font-size: 13px; background: var(--surface-2,#eef3f7); border-radius: 10px; padding: 11px 13px; line-height: 1.5; }
+.intel-actcard-recs { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.intel-actcard-rr { display: flex; gap: 8px; }
+.intel-actcard-rl { color: var(--text-2); min-width: 62px; flex: 0 0 auto; }
+.intel-actcard-rv { color: var(--text); }
+.intel-actcard-cta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
+.intel-actcard-done { font-size: 11.5px; color: var(--text-2); display: inline-flex; align-items: center; gap: 5px; margin-left: auto; cursor: pointer; }
+.intel-actcard-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 18px 0; }
+.intel-actcard-stats .s { background: var(--surface-2,#eef3f7); padding: 14px 12px; }
+.intel-actcard-stats .s .l { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); font-weight: 600; }
+.intel-actcard-stats .s .v { font-weight: 800; font-size: 17px; margin-top: 6px; }
+
 body.theme-dark .intel-table th { background: rgba(156, 156, 156,0.10); }
 body.theme-dark .intel-table tbody tr:hover td { background: rgba(156, 156, 156,0.08); }
 body.theme-dark .intel-score-bar, body.theme-dark .intel-seg-bar { background: rgba(255,255,255,0.08); }
@@ -23696,6 +23723,22 @@ function intelCompute(force) {
     // Segmentação RFM (Recência / Frequência / Valor) — 7 perfis de carteira
     const r = c.dias, f = c.pedidos, mpct = percentilDe(c.total);
     c.mpct = mpct;
+
+    // Desconto sugerido e tom de urgência (usado nos cartões de "Quem chamar hoje")
+    if (c.atraso !== null && c.atraso >= 0) {
+      c.desconto = mpct >= 0.7 ? 10 : mpct >= 0.4 ? 7 : 5;
+      c.tom = c.atraso > c.cicloUsado ? 'hi' : 'md';
+    } else if (c.status === 'Inativo') {
+      c.desconto = mpct >= 0.7 ? 15 : mpct >= 0.4 ? 10 : 8;
+      c.tom = mpct >= 0.6 ? 'hi' : 'md';
+    } else if (c.status === 'Em Risco') {
+      c.desconto = mpct >= 0.6 ? 8 : 5;
+      c.tom = 'md';
+    } else {
+      c.desconto = 0;
+      c.tom = 'lo';
+    }
+
     const altoValor = mpct >= 0.8, medioValor = mpct >= 0.55;
     if (f === 1 && r <= 45) c.segmento = 'Novo';
     else if (f >= 4 && r <= 45) c.segmento = 'Campeão';
@@ -23793,7 +23836,7 @@ function intelSaveContatos(arr) {
 }
 function intelToggleContato(key, el) {
   let arr = intelLoadContatos();
-  const row = el.closest ? el.closest('tr') : null;
+  const row = el.closest ? el.closest('tr, .intel-actcard') : null;
   if (el.checked) { if (!arr.includes(key)) arr.push(key); if (row) row.classList.add('intel-done'); }
   else { arr = arr.filter(k => k !== key); if (row) row.classList.remove('intel-done'); }
   intelSaveContatos(arr);
@@ -23802,7 +23845,7 @@ function intelToggleContato(key, el) {
 function intelUpdateContatoCounter() {
   const el = document.getElementById('intel-contato-counter'); if (!el) return;
   const table = document.getElementById('intel-tbl-call');
-  const total = table && table.tBodies[0] ? table.tBodies[0].rows.length : 0;
+  const total = table && table.tBodies[0] ? table.tBodies[0].rows.length : parseInt(el.dataset.total || '0', 10);
   el.textContent = intelLoadContatos().length + ' de ' + total + ' contatados hoje';
 }
 
@@ -23892,57 +23935,69 @@ function intelRenderOverview() {
   } catch (e) {}
 }
 
+let intelCallFilter = 'todos';
+const INTEL_CALL_CHIPS = [
+  ['todos', 'Prioridade geral'],
+  ['atrasados', 'Atrasados p/ recompra'],
+  ['risco', 'Em risco'],
+  ['reativar', 'Reativar inativos'],
+  ['whats', 'Com WhatsApp']
+];
+
+function intelSetCallFilter(f) { intelCallFilter = f; intelRenderCall(); }
+
+function intelActCard(c, contatos) {
+  const key = nameKey(c.nome);
+  const done = contatos.includes(key);
+  const wa = intelWaDigits(c.telefone);
+  const waBtn = wa
+    ? `<a class="intel-wa" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(intelWaMessage(c))}">WhatsApp</a>`
+    : `<span class="intel-wa is-disabled">Sem telefone</span>`;
+  const next = c.proxima ? fmtDate(c.proxima) : '—';
+  const fav = c.favProdValido ? c.favProd : 'seus produtos';
+  return `<div class="card intel-actcard u-${c.tom || 'lo'} ${done ? 'intel-done' : ''}">
+    <div class="intel-actcard-h">
+      <div>
+        <div class="intel-actcard-nm">${escapeHtml(c.nome)}</div>
+        <div class="intel-actcard-meta">${fmtBR(c.total)} em ${c.pedidos} pedido(s) · ${c.dias} dias sem comprar</div>
+      </div>
+      <div class="intel-actcard-score">${Math.round((c.score || 0) * 100)}</div>
+    </div>
+    <div class="intel-actcard-why">${escapeHtml(c.motivo)}</div>
+    <div class="intel-actcard-recs">
+      <div class="intel-actcard-rr"><span class="intel-actcard-rl">Ofereça</span><span class="intel-actcard-rv"><strong>${escapeHtml(fav)}</strong>${c.favProdValido ? ' (produto que ele mais compra)' : ''}</span></div>
+      <div class="intel-actcard-rr"><span class="intel-actcard-rl">Desconto</span><span class="intel-actcard-rv">${c.desconto > 0 ? `sugerido <strong>${c.desconto}%</strong> para fechar` : 'não precisa — foque em relacionamento / venda casada'}</span></div>
+      <div class="intel-actcard-rr"><span class="intel-actcard-rl">Recompra</span><span class="intel-actcard-rv">prevista p/ ${next}</span></div>
+    </div>
+    <div class="intel-actcard-cta">
+      ${waBtn}
+      <button class="btn btn-small" onclick="openClienteDrawer(${attrJsString(c.nome)})">Raio-x</button>
+      <label class="intel-actcard-done"><input type="checkbox" class="intel-check" ${done ? 'checked' : ''} onchange="intelToggleContato('${key}', this)"> Contatado hoje</label>
+    </div>
+  </div>`;
+}
+
 function intelRenderCall() {
   const pane = document.getElementById('intel-pane');
   const d = intelCompute();
-  const lista = d.clientes.filter(c => c.pedidos > 0 && c.acao !== 'Relacionamento').sort((a, b) => b.score - a.score).slice(0, 60);
-  if (!lista.length) { pane.innerHTML = '<div class="card"><div class="intel-empty">Nenhuma ação prioritária no momento — toda a base está em dia.</div></div>'; return; }
-  const maxScore = Math.max(...lista.map(c => c.score)) || 1;
+  let lista = d.clientes.filter(c => c.pedidos > 0 && c.acao !== 'Relacionamento').sort((a, b) => b.score - a.score);
+  if (intelCallFilter === 'atrasados') lista = lista.filter(c => c.atraso !== null && c.atraso >= 0);
+  else if (intelCallFilter === 'risco') lista = lista.filter(c => c.status === 'Em Risco');
+  else if (intelCallFilter === 'reativar') lista = lista.filter(c => c.status === 'Inativo');
+  else if (intelCallFilter === 'whats') lista = lista.filter(c => c.telefone);
+  lista = lista.slice(0, 60);
   const contatos = intelLoadContatos();
 
   pane.innerHTML = `
-    <div class="card">
-      <div class="card-title">Quem chamar hoje</div>
-      <div class="card-sub">Prioridade por valor do cliente e ciclo de recompra. ${lista.length} contatos sugeridos · <span id="intel-contato-counter">0 de ${lista.length} contatados hoje</span></div>
-      ${intelToolbar('intel-q-call', 'Buscar cliente...')}
-      <div style="overflow-x:auto;">
-      <table id="intel-tbl-call" class="intel-table">
-        <thead><tr>
-          <th class="intel-sortable" onclick="intelSortTable('intel-tbl-call',0,'num',this)">Prioridade<span class="intel-sort-ic"></span></th>
-          <th class="intel-sortable" onclick="intelSortTable('intel-tbl-call',1,'text',this)">Cliente<span class="intel-sort-ic"></span></th>
-          <th>Ação</th><th>Motivo</th>
-          <th class="num intel-sortable" onclick="intelSortTable('intel-tbl-call',4,'num',this)">Total<span class="intel-sort-ic"></span></th>
-          <th>Status</th>
-          <th class="intel-sortable" onclick="intelSortTable('intel-tbl-call',6,'date',this)">Última<span class="intel-sort-ic"></span></th>
-          <th>Responsável</th><th>Contato</th><th>Feito</th>
-        </tr></thead>
-        <tbody>
-          ${lista.map(c => {
-            const key = nameKey(c.nome);
-            const done = contatos.includes(key);
-            const wa = intelWaDigits(c.telefone);
-            const waBtn = wa
-              ? `<a class="intel-wa" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(intelWaMessage(c))}">WhatsApp</a>`
-              : `<span class="intel-wa is-disabled">Sem telefone</span>`;
-            return `<tr class="${done ? 'intel-done' : ''}">
-              <td data-sort="${c.score.toFixed(4)}"><div class="intel-score-bar"><div class="intel-score-fill" style="width:${(c.score / maxScore) * 100}%;"></div></div></td>
-              <td class="strong">${escapeHtml(c.nome)}${c.favProdValido ? `<div class="intel-muted" style="font-size:11px;">Favorito: ${escapeHtml(c.favProd)}</div>` : ''}</td>
-              <td><span class="intel-tag">${escapeHtml(c.acao)}</span></td>
-              <td class="intel-muted">${escapeHtml(c.motivo)}</td>
-              <td class="num" data-sort="${c.total}">${fmtBR(c.total)}</td>
-              <td>${intelStatusPill(c.status)}</td>
-              <td class="intel-muted" data-sort="${intelTs(c.ultima)}">${fmtDate(c.ultima)}</td>
-              <td class="intel-muted">${escapeHtml(c.resp || '—')}</td>
-              <td>${waBtn}</td>
-              <td><input type="checkbox" class="intel-check" ${done ? 'checked' : ''} onchange="intelToggleContato('${key}', this)"></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div><div class="card-title">Quem chamar hoje</div><div class="card-sub">${lista.length} contatos sugeridos · <span id="intel-contato-counter" data-total="${lista.length}">0 de ${lista.length} contatados hoje</span></div></div>
       </div>
+      <div class="intel-chips">${INTEL_CALL_CHIPS.map(f => `<span class="intel-chip ${intelCallFilter === f[0] ? 'on' : ''}" onclick="intelSetCallFilter('${f[0]}')">${f[1]}</span>`).join('')}</div>
     </div>
+    ${lista.length ? `<div class="intel-acts">${lista.map(c => intelActCard(c, contatos)).join('')}</div>` : '<div class="card"><div class="intel-empty">Nada na fila com esse filtro.</div></div>'}
+    <div class="intel-seg-note" style="margin-top:12px;">Ordenado por um <strong>score de prioridade</strong> que combina o valor do cliente com a urgência (atraso na recompra e tempo sem comprar). A mensagem do WhatsApp já vai pré-escrita — é só revisar e enviar.</div>
   `;
-  document.getElementById('intel-q-call').dataset.tbl = 'intel-tbl-call';
   intelUpdateContatoCounter();
 }
 
@@ -24215,6 +24270,39 @@ function closeSegDrawer() {
   if (sc) sc.classList.remove('on');
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSegDrawer(); });
+
+function openClienteDrawer(nome) {
+  const d = intelCompute();
+  const c = d.clientes.find(x => nameKey(x.nome) === nameKey(nome));
+  if (!c) return;
+  const wa = intelWaDigits(c.telefone);
+  const waBtn = wa
+    ? `<a class="btn btn-primary" style="width:100%;margin-bottom:6px;text-align:center;" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(intelWaMessage(c))}">Chamar no WhatsApp (mensagem pronta)</a>`
+    : `<div class="intel-seg-note" style="margin-top:0;">Sem telefone cadastrado para este cliente. Atualize o cadastro para liberar o contato direto.</div>`;
+  const body = document.getElementById('intel-seg-drawer-body');
+  body.innerHTML = `
+    <div class="intel-seg-dh">
+      <button class="intel-seg-close" onclick="closeSegDrawer()">✕</button>
+      <div class="intel-seg-dname">${escapeHtml(c.nome)}</div>
+      <div class="intel-seg-dsub">${intelStatusPill(c.status)} <span class="intel-tag" style="margin-left:6px;">${escapeHtml(c.segmento || '')}</span></div>
+    </div>
+    <div class="intel-seg-dbody">
+      <div class="intel-seg-advice">${escapeHtml(c.motivo)}</div>
+      <div class="intel-actcard-stats">
+        <div class="s"><div class="l">Gasto total</div><div class="v">${fmtBR(c.total)}</div></div>
+        <div class="s"><div class="l">Pedidos</div><div class="v">${c.pedidos}</div></div>
+        <div class="s"><div class="l">Ticket médio</div><div class="v">${fmtBR(c.ticket)}</div></div>
+        <div class="s"><div class="l">Sem comprar há</div><div class="v">${c.dias}d</div></div>
+        <div class="s"><div class="l">Intervalo médio</div><div class="v">${c.intervalo != null ? c.intervalo + 'd' : '—'}</div></div>
+        <div class="s"><div class="l">Próx. prevista</div><div class="v" style="font-size:14px;">${c.proxima ? fmtDate(c.proxima) : '—'}</div></div>
+      </div>
+      ${waBtn}
+      ${c.favProdValido ? `<div class="intel-seg-note" style="margin-top:10px;">Produto favorito: <strong style="color:var(--text);">${escapeHtml(c.favProd)}</strong></div>` : ''}
+    </div>
+  `;
+  document.getElementById('intel-seg-drawer').classList.add('on');
+  document.getElementById('intel-seg-scrim').classList.add('on');
+}
 
 /* ============================ CONTROLE ============================ */
 function intelRenderVendedores() {
