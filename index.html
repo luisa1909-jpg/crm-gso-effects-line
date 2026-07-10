@@ -24278,6 +24278,25 @@ function closeSegDrawer() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSegDrawer(); });
 
+function intelAdviceText(c) {
+  let motivo;
+  if (c.atraso !== null && c.atraso >= 0) {
+    motivo = `Costuma comprar a cada ~${c.cicloUsado} dias e já faz ${c.dias} dias — está ${c.atraso} dia(s) atrasado para o próximo pedido.`;
+  } else if (c.status === 'Inativo') {
+    motivo = `Sem comprar há ${c.dias} dias. Cliente ${c.pedidos >= 2 ? 'recorrente que esfriou' : 'que comprou uma vez'} — janela de reativação.`;
+  } else if (c.status === 'Em Risco') {
+    motivo = `Entrando em risco (${c.dias} dias sem comprar). Um toque agora evita perder o cliente.`;
+  } else if (c.pedidos >= 4) {
+    motivo = `Cliente ativo e fiel (${c.pedidos} pedidos). Momento de fidelizar e fazer venda casada, sem precisar de desconto.`;
+  } else {
+    motivo = `Cliente ativo recente. Reforçar relacionamento e apresentar a linha completa.`;
+  }
+  const fav = escapeHtml(c.favProdValido ? c.favProd : 'seus produtos');
+  if (c.desconto > 0) return `Ofereça <strong>${fav}</strong> com <strong>${c.desconto}% de desconto</strong>. ${motivo}`;
+  if (c.status === 'Ativo') return `Cliente saudável. ${motivo}`;
+  return motivo;
+}
+
 function openClienteDrawer(nome) {
   const d = intelCompute();
   const c = d.clientes.find(x => nameKey(x.nome) === nameKey(nome));
@@ -24309,7 +24328,7 @@ function openClienteDrawer(nome) {
       <div class="intel-seg-dsub">${intelStatusPill(c.status)} <span class="intel-tag" style="margin-left:6px;">${escapeHtml(c.segmento || '')}</span></div>
     </div>
     <div class="intel-seg-dbody">
-      <div class="intel-seg-advice">${escapeHtml(c.motivo)}</div>
+      <div class="intel-seg-advice">${intelAdviceText(c)}</div>
       <div class="intel-actcard-stats">
         <div class="s"><div class="l">Gasto total</div><div class="v">${fmtBR(c.total)}</div></div>
         <div class="s"><div class="l">Pedidos</div><div class="v">${c.pedidos}</div></div>
