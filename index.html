@@ -13012,7 +13012,9 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
     <div class="sb-section">OPERAÇÕES</div>
     <div class="nav-item" data-view="vendas" data-label="Vendas" onclick="navTo('vendas')">
       <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
-      Vendas
+      <span class="nav-label">Vendas</span>
+      <span class="client-alert-badge hidden" id="saleReviewBadge" onclick="event.stopPropagation(); abrirRevisaoVendas();">0</span>
+      <span class="client-alert-bubble hidden" id="saleReviewBubble"></span>
     </div>
 		    <div class="nav-item" data-view="clientes" data-label="Clientes" onclick="navTo('clientes')">
 		      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>
@@ -13089,6 +13091,10 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
           <option value="com">Com NF</option>
           <option value="sem">Sem NF</option>
         </select>
+        <label class="filter-revisar-toggle" title="Mostrar só vendas com cliente ambíguo, pendente de revisão">
+          <input type="checkbox" id="filterRevisar" onchange="renderVendas()">
+          <span>⚠️ Revisar</span>
+        </label>
         <button class="btn btn-soft" onclick="limparFiltrosVendas()">Limpar</button>
       </div>
 
@@ -15245,7 +15251,10 @@ function saleToRow(v) {
         name: v.boleto.name || null,
         path: v.boleto.path || null,
         localOnly: Boolean(v.boleto.data && !v.boleto.path)
-      } : null
+      } : null,
+      clienteOriginal: v.clienteOriginal || null,
+      revisaoCliente: Boolean(v.revisaoCliente),
+      revisaoCandidatos: v.revisaoCandidatos || null
     }
   };
 }
@@ -15276,7 +15285,10 @@ function rowToSale(r) {
     precoSugerido: r.metadata?.precoSugerido || null,
     desconto: r.metadata?.desconto || null,
     nfNumber: r.metadata?.nfNumber || r.metadata?.notaFiscalNumero || r.numero_nota_fiscal || null,
-    boleto: r.metadata?.boleto?.path ? { name: r.metadata.boleto.name || 'boleto.pdf', path: r.metadata.boleto.path } : null
+    boleto: r.metadata?.boleto?.path ? { name: r.metadata.boleto.name || 'boleto.pdf', path: r.metadata.boleto.path } : null,
+    clienteOriginal: r.metadata?.clienteOriginal || null,
+    revisaoCliente: Boolean(r.metadata?.revisaoCliente),
+    revisaoCandidatos: Array.isArray(r.metadata?.revisaoCandidatos) ? r.metadata.revisaoCandidatos : null
   };
 }
 
@@ -15511,14 +15523,15 @@ async function loadRemoteState() {
   if (!client || !session) return;
   try {
     setSyncStatus('syncing', 'Carregando Supabase...');
-    const [vendasRes, clientesRes, fiscaisRes, produtosRes, profileRes] = await Promise.all([
+    const [vendasRes, clientesRes, fiscaisRes, produtosRes, profileRes, aliasesRes] = await Promise.all([
       client.from('crm_vendas').select('*').order('data', { ascending: false }),
       client.from('crm_clientes').select('*').order('nome', { ascending: true }),
       client.from('crm_fiscais').select('*').order('nome', { ascending: true }),
       client.from('crm_produtos').select('*').order('produto', { ascending: true }),
-      client.from('crm_profiles').select('*').eq('id', session.user.id).maybeSingle()
+      client.from('crm_profiles').select('*').eq('id', session.user.id).maybeSingle(),
+      client.from('crm_client_aliases').select('alias_normalizado,cliente_nome,doc')
     ]);
-    [vendasRes, clientesRes, fiscaisRes, produtosRes, profileRes].forEach(res => {
+    [vendasRes, clientesRes, fiscaisRes, produtosRes, profileRes, aliasesRes].forEach(res => {
       if (res.error) throw res.error;
     });
 
@@ -15539,6 +15552,7 @@ async function loadRemoteState() {
     if (clientesRes.data.length) state.clientes = clientesRes.data.map(rowToCliente);
     if (fiscaisRes.data.length) state.fiscais = fiscaisRes.data.map(rowToFiscal);
     if (produtosRes.data.length) state.produtos = produtosRes.data.map(rowToProduto);
+    if (aliasesRes.data.length) state.clienteAliases = aliasesRes.data;
     const catalogChanged = applyCatalogCorrections(false);
     STORE.saveAll(state);
     remoteHydrating = false;
@@ -16741,6 +16755,7 @@ const STORE = {
 	      vendas: JSON.parse(localStorage.getItem('gso_vendas') || '[]'),
 	      clientes: JSON.parse(localStorage.getItem('gso_clientes') || '[]'),
 	      fiscais: JSON.parse(localStorage.getItem('gso_fiscais') || '[]'),
+	      clienteAliases: JSON.parse(localStorage.getItem('gso_clienteAliases') || '[]'),
 	      notas_fiscais: JSON.parse(localStorage.getItem('gso_notas_fiscais') || '[]'),
 	      estoque: JSON.parse(localStorage.getItem('gso_estoque') || '[]'),
 	      produtos: JSON.parse(localStorage.getItem('gso_produtos') || 'null') || defaultProdutos()
@@ -17206,6 +17221,45 @@ function nameKey(value) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }
+
+let clienteAliasMapCache = null;
+let clienteAliasMapCacheLen = -1;
+function getClienteAliasMap() {
+  const source = state.clienteAliases || [];
+  if (clienteAliasMapCache && clienteAliasMapCacheLen === source.length) return clienteAliasMapCache;
+  const map = {};
+  source.forEach(a => {
+    const key = a.alias_normalizado;
+    if (!key) return;
+    if (!map[key]) map[key] = [];
+    if (!map[key].some(c => c.nome === a.cliente_nome)) map[key].push({ nome: a.cliente_nome, doc: a.doc || null });
+  });
+  clienteAliasMapCache = map;
+  clienteAliasMapCacheLen = source.length;
+  return map;
+}
+
+// Resolve um nome de cliente digitado contra o dicionário de apelidos importado da planilha.
+// Sem match: devolve o nome como digitado. Um único cliente conhecido: unifica automaticamente.
+// Mais de um cliente conhecido pro mesmo apelido: não arrisca, marca a venda para revisão manual.
+function resolveClienteAlias(nomeDigitado) {
+  const key = nameKey(nomeDigitado);
+  const matches = getClienteAliasMap()[key];
+  if (!matches || matches.length === 0) {
+    return { cliente: nomeDigitado, clienteOriginal: null, revisaoCliente: false, revisaoCandidatos: null };
+  }
+  if (matches.length === 1) {
+    const canonico = matches[0].nome;
+    return {
+      cliente: canonico,
+      clienteOriginal: canonico !== nomeDigitado ? nomeDigitado : null,
+      revisaoCliente: false,
+      revisaoCandidatos: null
+    };
+  }
+  return { cliente: nomeDigitado, clienteOriginal: null, revisaoCliente: true, revisaoCandidatos: matches };
+}
+
 function canonicalSellerName(value) {
   const key = nameKey(value);
   const map = {
@@ -17487,6 +17541,32 @@ function updateClientAlert() {
   bubble.textContent = `Cadastre o cliente "${latest.cliente}" da venda nº ${latest.numeroVenda}.${extra}`;
   badge.classList.remove('hidden');
   bubble.classList.remove('hidden');
+}
+function updateSaleReviewBadge() {
+  const badge = document.getElementById('saleReviewBadge');
+  const bubble = document.getElementById('saleReviewBubble');
+  if (!badge || !bubble) return;
+  const pendentes = state.vendas.filter(v => v.revisaoCliente);
+  if (pendentes.length === 0) {
+    badge.classList.add('hidden');
+    bubble.classList.add('hidden');
+    bubble.textContent = '';
+    return;
+  }
+  badge.textContent = pendentes.length > 9 ? '9+' : String(pendentes.length);
+  bubble.textContent = `${pendentes.length} venda${pendentes.length > 1 ? 's' : ''} com cliente ambíguo — clique para revisar.`;
+  badge.classList.remove('hidden');
+  bubble.classList.remove('hidden');
+}
+function abrirRevisaoVendas() {
+  navTo('vendas');
+  setTimeout(() => {
+    const filtro = document.getElementById('filterRevisar');
+    if (filtro) {
+      filtro.checked = true;
+      renderVendas();
+    }
+  }, 0);
 }
 function addPendingClientAlert(cliente, numeroVenda) {
   const key = nameKey(cliente);
@@ -18381,6 +18461,8 @@ function limparFiltrosVendas() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const filtroRevisar = document.getElementById('filterRevisar');
+  if (filtroRevisar) filtroRevisar.checked = false;
   renderVendas();
 }
 
@@ -18409,6 +18491,7 @@ function renderVendas() {
   const pagamentoFiltro = document.getElementById('filterPagamento')?.value || '';
   const vendedorFiltro = document.getElementById('filterVendedor')?.value || '';
   const nfFiltro = document.getElementById('filterNF')?.value || '';
+  const revisarFiltro = Boolean(document.getElementById('filterRevisar')?.checked);
   let rows = [...state.vendas].sort((a, b) => new Date(b.data) - new Date(a.data));
   if (term) rows = rows.filter(r =>
     (r.cliente || '').toLowerCase().includes(term) ||
@@ -18424,10 +18507,11 @@ function renderVendas() {
   if (vendedorFiltro) rows = rows.filter(r => canonicalSellerName(r.vendedor || 'Sem vendedor') === vendedorFiltro);
   if (nfFiltro === 'com') rows = rows.filter(saleHasNf);
   if (nfFiltro === 'sem') rows = rows.filter(r => !saleHasNf(r));
+  if (revisarFiltro) rows = rows.filter(r => r.revisaoCliente);
   if (dashboardSalesQuickFilter === 'hoje') rows = rows.filter(r => dashboardDateKey(r.data) === dashboardDateKey(new Date()));
   if (dashboardSalesQuickFilter === 'sem_boleto') rows = rows.filter(r => canonicalPayment(r.pagamento || '') === 'Boleto' && !dashboardHasSaleFile(r, 'boleto'));
 
-  const pageSignature = gsoPaginationSignature([term, dataFiltro, ano, produtoFiltro, aromaFiltro, pagamentoFiltro, vendedorFiltro, nfFiltro, dashboardSalesQuickFilter, rows.length]);
+  const pageSignature = gsoPaginationSignature([term, dataFiltro, ano, produtoFiltro, aromaFiltro, pagamentoFiltro, vendedorFiltro, nfFiltro, revisarFiltro, dashboardSalesQuickFilter, rows.length]);
   const pageInfo = gsoPaginateRows('vendas', rows, pageSignature);
   const tbody = document.getElementById('vendasTable');
   if (rows.length === 0) {
@@ -18446,7 +18530,7 @@ function renderVendas() {
     return `
       <tr>
         <td${saleCellClass(r, ['data'])}>${typeof gsoDateCell==='function'?gsoDateCell(r.data):fmtDate(r.data)}</td>
-        <td${saleCellClass(r, ['cliente'])}>${r.cliente}</td>
+        <td${saleCellClass(r, ['cliente'])}>${r.cliente}${r.revisaoCliente ? ' <span class="gso-has-tip" data-tip="Cliente ambíguo — precisa revisar em Ver mais">⚠️</span>' : ''}</td>
         <td${saleCellClass(r, ['produto','tamanho'])}>${r.produto}</td>
         <td${saleCellClass(r, ['aroma'])}><span class="pill pill-aroma ${typeof gsoAromaClass==='function'?gsoAromaClass(r.aroma):''}">${r.aroma || 'Neutro'}</span></td>
         <td class="num${saleCellClassName(r, ['qtd'])}">${r.qtd}</td>
@@ -18702,6 +18786,16 @@ function renderVerMaisVenda(id) {
       : `<div class="nf-actions"><button class="upload-icon boleto-button" onclick="document.getElementById('vm-boleto-${r.id}').click()" data-tip="Anexar o PDF do boleto nesta venda.">Anexar boleto</button><input type="file" id="vm-boleto-${r.id}" accept="application/pdf" style="display:none;" onchange="uploadBoletoSale('${r.id}', event).then(()=>renderVerMaisVenda('${r.id}'))"></div>`)
     : '';
 
+  const revisaoHtml = r.revisaoCliente && Array.isArray(r.revisaoCandidatos)
+    ? `<div class="vm-revisao">
+        <div class="vm-revisao-title">⚠️ Cliente ambíguo — "${escapeHtml(r.cliente)}" pode ser qualquer um destes. Confirme qual é:</div>
+        <div class="vm-revisao-opcoes">
+          ${r.revisaoCandidatos.map(c => `<button class="btn btn-small" onclick="confirmarClienteRevisao('${r.id}', ${attrJsString(c.nome)})">${escapeHtml(c.nome)}</button>`).join('')}
+          <button class="btn btn-small btn-soft" onclick="ignorarRevisaoCliente('${r.id}')">Nenhum destes / manter como está</button>
+        </div>
+      </div>`
+    : '';
+
   document.getElementById('ver-mais-title').textContent = 'Venda nº ' + (r.numeroVenda || '—') + ' — ' + (r.cliente || '');
   document.getElementById('ver-mais-body').innerHTML = `
     <div class="vm-stats">
@@ -18714,6 +18808,7 @@ function renderVerMaisVenda(id) {
       <div class="s"><div class="l">Pagamento</div><div class="v">${escapeHtml(paymentDisplay(r))}</div></div>
       <div class="s"><div class="l">Vendedor</div><div class="v">${escapeHtml(r.vendedor || '—')}</div></div>
     </div>
+    ${revisaoHtml}
     <div class="vm-section"><div class="vm-section-title">Nota fiscal</div>${nfHtml}</div>
     ${boletoHtml ? `<div class="vm-section"><div class="vm-section-title">Boleto</div>${boletoHtml}</div>` : ''}
     ${r.obs ? `<div class="vm-section"><div class="vm-section-title">Observações</div><div class="v">${escapeHtml(r.obs)}</div></div>` : ''}
@@ -18721,6 +18816,30 @@ function renderVerMaisVenda(id) {
       <button class="btn btn-small" onclick="printSaleLabelById('${r.id}')">Recibo</button>
     </div>
   `;
+}
+
+function confirmarClienteRevisao(id, nomeConfirmado) {
+  const venda = state.vendas.find(v => v.id === id);
+  if (!venda) return;
+  venda.clienteOriginal = venda.clienteOriginal || venda.cliente;
+  venda.cliente = nomeConfirmado;
+  venda.revisaoCliente = false;
+  venda.revisaoCandidatos = null;
+  STORE.save('vendas', state.vendas);
+  updateSaleReviewBadge();
+  renderVerMaisVenda(id);
+  if (!document.getElementById('view-vendas')?.classList.contains('hidden')) renderVendas();
+}
+
+function ignorarRevisaoCliente(id) {
+  const venda = state.vendas.find(v => v.id === id);
+  if (!venda) return;
+  venda.revisaoCliente = false;
+  venda.revisaoCandidatos = null;
+  STORE.save('vendas', state.vendas);
+  updateSaleReviewBadge();
+  renderVerMaisVenda(id);
+  if (!document.getElementById('view-vendas')?.classList.contains('hidden')) renderVendas();
 }
 
 function valuesDiffer(oldValue, newValue, numeric = false) {
@@ -22167,7 +22286,8 @@ async function salvarVenda() {
     return;
   }
 
-  const clienteCadastrado = state.clientes.some(c => nameKey(c.nome) === nameKey(cliente));
+  const aliasResolvido = resolveClienteAlias(cliente);
+  const clienteCadastrado = state.clientes.some(c => nameKey(c.nome) === nameKey(aliasResolvido.cliente));
   const numeroVenda = isEditing ? existingVenda.numeroVenda : nextSaleNumber();
   const items = currentSaleItems.length > 0 ? [...currentSaleItems] : [currentSaleItem()];
   const precoSugerido = items.reduce((sum, item) => sum + (parseFloat(item.preco) || 0), 0);
@@ -22181,7 +22301,10 @@ async function salvarVenda() {
   const vendaFields = {
     numeroVenda,
     data: document.getElementById('f-data').value,
-    cliente,
+    cliente: aliasResolvido.cliente,
+    clienteOriginal: aliasResolvido.clienteOriginal,
+    revisaoCliente: aliasResolvido.revisaoCliente,
+    revisaoCandidatos: aliasResolvido.revisaoCandidatos,
     produto: descricaoProduto,
     tamanho: singleItem ? singleItem.tamanho : (tamanhos.length === 1 ? tamanhos[0] : 'Misto'),
     catalogProduto: singleItem ? singleItem.catalogProduto : null,
@@ -22225,6 +22348,7 @@ async function salvarVenda() {
     venda.editedFields = venda.editedFields || {};
     venda.editedAt = new Date().toISOString();
     STORE.save('vendas', state.vendas);
+    updateSaleReviewBadge();
     editingVendaId = null;
     alert('✅ Venda nº ' + numeroVenda + ' atualizada!');
     navTo('vendas');
@@ -22233,8 +22357,9 @@ async function salvarVenda() {
 
   state.vendas.push(venda);
   STORE.save('vendas', state.vendas);
-  if (!clienteCadastrado) addPendingClientAlert(cliente, numeroVenda);
-  const imprimir = confirm('✅ Venda nº ' + numeroVenda + ' registrada!\n\n' + cliente + ' — ' + fmtBR(valor) + (!clienteCadastrado ? '\n\nCliente ainda não cadastrado: deixei um aviso no menu Clientes.' : '') + '\n\nDeseja imprimir a nota simplificada desta venda agora?');
+  updateSaleReviewBadge();
+  if (!clienteCadastrado) addPendingClientAlert(aliasResolvido.cliente, numeroVenda);
+  const imprimir = confirm('✅ Venda nº ' + numeroVenda + ' registrada!\n\n' + aliasResolvido.cliente + ' — ' + fmtBR(valor) + (!clienteCadastrado ? '\n\nCliente ainda não cadastrado: deixei um aviso no menu Clientes.' : '') + '\n\nDeseja imprimir a nota simplificada desta venda agora?');
   if (imprimir) printSaleLabel(venda);
   navTo('inteligencia');
 }
@@ -22379,6 +22504,7 @@ function renderAll() {
   renderDash();
   updateAvatars();
   updateClientAlert();
+  updateSaleReviewBadge();
   updateUnreadBadge();
   updateBoletosBadge();
   updateMobileChrome();
@@ -27619,6 +27745,16 @@ body.theme-dark #view-inteligencia .dash-inline-metrics > div, body.theme-dark #
 /* Padronização visual: todas as tabelas do sistema com conteúdo centralizado e espaçamento consistente */
 table th, table td { text-align: center !important; vertical-align: middle !important; padding: 12px 14px !important; }
 table thead th { padding: 11px 14px !important; }
+
+/* Filtro "Revisar" (vendas com cliente ambíguo) */
+.filter-revisar-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; height: 38px; border-radius: var(--radius, 10px); border: 1px solid var(--border, #E3E1D8); background: var(--surface-1, #fff); font-size: 13px; color: var(--text, #2C2C2A); cursor: pointer; white-space: nowrap; }
+.filter-revisar-toggle input { cursor: pointer; }
+.filter-revisar-toggle:has(input:checked) { border-color: #E24B4A; background: #FCEBEB; color: #A32D2D; font-weight: 600; }
+
+/* Alerta de revisão dentro do "Ver mais" da venda */
+.vm-revisao { margin-top: 14px; padding: 12px 14px; border-radius: 10px; border: 1px solid #F09595; background: #FCEBEB; }
+.vm-revisao-title { font-size: 12.5px; font-weight: 700; color: #A32D2D; margin-bottom: 8px; }
+.vm-revisao-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
 </style>
 </body>
 </html>
