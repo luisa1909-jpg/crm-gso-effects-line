@@ -18524,7 +18524,7 @@ function renderVendas() {
     return `
       <tr>
         <td${saleCellClass(r, ['data'])}>${typeof gsoDateCell==='function'?gsoDateCell(r.data):fmtDate(r.data)}</td>
-        <td${saleCellClass(r, ['cliente'])}>${r.revisaoCliente ? `<span class="revisao-nome-wrap">${r.cliente}&nbsp;<span class="revisao-dot gso-has-tip" data-tip="Cliente ambíguo — precisa revisar em Ver mais"></span></span>` : r.cliente}</td>
+        <td${saleCellClass(r, ['cliente'])}>${r.revisaoCliente ? `<span class="revisao-dot gso-has-tip" data-tip="Cliente ambíguo — precisa revisar em Ver mais"></span> ` : ''}${r.cliente}</td>
         <td${saleCellClass(r, ['produto','tamanho'])}>${r.produto}</td>
         <td${saleCellClass(r, ['aroma'])}><span class="pill pill-aroma ${typeof gsoAromaClass==='function'?gsoAromaClass(r.aroma):''}">${r.aroma || 'Neutro'}</span></td>
         <td class="num${saleCellClassName(r, ['qtd'])}">${r.qtd}</td>
@@ -27747,8 +27747,7 @@ table thead th { padding: 11px 14px !important; }
 body.theme-dark .filter-revisar-toggle:has(input:checked) { border-color: rgba(201,60,55,.6) !important; background: rgba(201,60,55,.22) !important; color: #E8827D !important; }
 
 /* Bolinha vermelha que substitui o emoji de alerta nas linhas da tabela (mesmo tom do badge da aba Vendas) */
-.revisao-nome-wrap { white-space: nowrap !important; overflow-wrap: normal !important; word-break: keep-all !important; }
-.revisao-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #C93C37; vertical-align: middle; margin-left: 5px; box-shadow: 0 0 0 3px rgba(201,60,55,.2); }
+.revisao-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #C93C37; vertical-align: middle; margin-right: 6px; box-shadow: 0 0 0 3px rgba(201,60,55,.2); }
 
 /* Alerta de revisão dentro do "Ver mais" da venda */
 .vm-revisao { margin-top: 14px; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(201,60,55,.35); background: rgba(201,60,55,.08); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
