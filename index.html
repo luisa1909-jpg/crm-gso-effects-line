@@ -24485,15 +24485,7 @@ window.gsoDateCell = function (d) {
   }
   if (isNaN(dt)) return String(d);
   var data = dt.toLocaleDateString('pt-BR');
-  var hasTime = false;
-  if (typeof d === 'string') { hasTime = /\d{1,2}:\d{2}/.test(d) || /T\d/.test(d); }
-  if (!hasTime && (dt.getHours() !== 0 || dt.getMinutes() !== 0)) hasTime = true;
-  var html = '<span class="vd-date">' + data + '</span>';
-  if (hasTime) {
-    var hh = ('0' + dt.getHours()).slice(-2), mm = ('0' + dt.getMinutes()).slice(-2);
-    html += '<span class="vd-time">' + hh + ':' + mm + '</span>';
-  }
-  return html;
+  return '<span class="vd-date">' + data + '</span>';
 };
 /* aroma -> classe de cor suave (tags da tabela de Vendas) */
 window.gsoAromaClass = function (a) {
