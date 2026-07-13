@@ -13175,6 +13175,7 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
           <div class="h-sub"><span id="clientes-count">0</span> clientes na base</div>
         </div>
         <div class="h-actions">
+          <button class="btn btn-primary hidden" id="btn-unificar-clientes" onclick="abrirUnificacaoClientes()">Unificar (<span id="unificar-count">0</span>)</button>
           <button class="btn btn-primary btn-nova-venda" onclick="navTo('nova')">+ Nova venda</button>
           <button class="btn btn-primary" onclick="openClienteModal()">+ Novo Cliente</button>
         </div>
@@ -14615,6 +14616,24 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
     <div id="ver-mais-body"></div>
     <div class="form-actions">
       <button class="btn btn-primary" onclick="document.getElementById('modal-ver-mais').classList.remove('show')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL UNIFICAR CLIENTES ============ -->
+<div class="modal-bg" id="modal-unificar">
+  <div class="modal modal-wide">
+    <div class="modal-title">Unificar clientes</div>
+    <div class="card-sub" style="margin-top:-8px;margin-bottom:14px;">São a mesma pessoa/empresa? Escolha o nome principal — os outros serão renomeados e as vendas somadas nele.</div>
+    <div id="unificar-lista"></div>
+    <div class="unificar-adicionar">
+      <input type="text" class="form-input" id="unificar-busca" placeholder="Buscar e adicionar outro cliente ao grupo..." oninput="buscarClienteParaUnificar(this.value)" autocomplete="off">
+      <div id="unificar-busca-resultados" class="unificar-busca-resultados hidden"></div>
+    </div>
+    <div id="unificar-preview" class="unificar-preview"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="fecharUnificacaoClientes()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarUnificacaoClientes()">Unificar</button>
     </div>
   </div>
 </div>
@@ -19232,6 +19251,222 @@ async function excluirCliente(nome) {
   }
 }
 
+// ============ UNIFICAR CLIENTES (mesma pessoa com nomes diferentes) ============
+let unificarSelecionados = new Set();
+let unificarNomePrincipal = null;
+
+function atualizarSelecaoUnificar(checkbox, nome) {
+  const key = nameKey(nome);
+  if (checkbox.checked) unificarSelecionados.add(key);
+  else unificarSelecionados.delete(key);
+  const btn = document.getElementById('btn-unificar-clientes');
+  const count = document.getElementById('unificar-count');
+  if (count) count.textContent = String(unificarSelecionados.size);
+  if (btn) btn.classList.toggle('hidden', unificarSelecionados.size < 2);
+}
+
+function toggleTodosUnificar(checkbox) {
+  document.querySelectorAll('#clientesTable .chk-unificar-linha').forEach(chk => {
+    if (chk.checked !== checkbox.checked) {
+      chk.checked = checkbox.checked;
+      chk.dispatchEvent(new Event('change'));
+    }
+  });
+}
+
+function abrirUnificacaoClientes() {
+  if (unificarSelecionados.size < 2) { alert('Selecione ao menos 2 clientes para unificar.'); return; }
+  const clis = computeClientes();
+  const selecionados = clis.filter(c => unificarSelecionados.has(nameKey(c.nome)));
+  unificarNomePrincipal = selecionados.slice().sort((a, b) => b.pedidos - a.pedidos)[0]?.nome || null;
+  renderUnificarModal(selecionados);
+  document.getElementById('modal-unificar').classList.add('show');
+}
+
+function fecharUnificacaoClientes() {
+  document.getElementById('modal-unificar').classList.remove('show');
+  const busca = document.getElementById('unificar-busca');
+  if (busca) busca.value = '';
+  const resultados = document.getElementById('unificar-busca-resultados');
+  if (resultados) resultados.classList.add('hidden');
+}
+
+function renderUnificarModal(selecionados) {
+  const lista = document.getElementById('unificar-lista');
+  if (!lista) return;
+  lista.innerHTML = selecionados.map(c => `
+    <label class="unificar-linha">
+      <input type="radio" name="unificar-principal" value="${attrJsString(c.nome)}" ${nameKey(c.nome) === nameKey(unificarNomePrincipal) ? 'checked' : ''} onchange="unificarNomePrincipal = ${attrJsString(c.nome)}; atualizarUnificarPreview();">
+      <div class="unificar-linha-info">
+        <strong>${escapeHtml(c.nome)}</strong>
+        <span>${c.pedidos} pedido${c.pedidos === 1 ? '' : 's'} · ${fmtBR(c.total)} · ${escapeHtml(c.telefone || 'sem telefone')} · ${escapeHtml(composeFiscalDoc(fiscalDocForCliente(c.nome) || {}) || 'sem doc')}</span>
+      </div>
+      <button type="button" class="btn btn-small btn-soft" onclick="removerCandidatoUnificar(${attrJsString(c.nome)})" data-tip="Remover do grupo">✕</button>
+    </label>
+  `).join('');
+  atualizarUnificarPreview();
+}
+
+function removerCandidatoUnificar(nome) {
+  unificarSelecionados.delete(nameKey(nome));
+  renderClientes();
+  if (unificarSelecionados.size < 2) { fecharUnificacaoClientes(); return; }
+  const clis = computeClientes().filter(c => unificarSelecionados.has(nameKey(c.nome)));
+  if (nameKey(unificarNomePrincipal) === nameKey(nome)) unificarNomePrincipal = clis.slice().sort((a, b) => b.pedidos - a.pedidos)[0]?.nome || null;
+  renderUnificarModal(clis);
+}
+
+function buscarClienteParaUnificar(termo) {
+  const resultados = document.getElementById('unificar-busca-resultados');
+  if (!resultados) return;
+  const t = termo.trim().toLowerCase();
+  if (t.length < 2) { resultados.classList.add('hidden'); resultados.innerHTML = ''; return; }
+  const achados = computeClientes()
+    .filter(c => !unificarSelecionados.has(nameKey(c.nome)) && c.nome.toLowerCase().includes(t))
+    .slice(0, 8);
+  if (!achados.length) { resultados.classList.add('hidden'); resultados.innerHTML = ''; return; }
+  resultados.innerHTML = achados.map(c => `
+    <div class="unificar-busca-item" onclick="adicionarCandidatoUnificar(${attrJsString(c.nome)})">
+      <strong>${escapeHtml(c.nome)}</strong>
+      <span>${c.pedidos} pedido${c.pedidos === 1 ? '' : 's'}</span>
+    </div>
+  `).join('');
+  resultados.classList.remove('hidden');
+}
+
+function adicionarCandidatoUnificar(nome) {
+  unificarSelecionados.add(nameKey(nome));
+  const busca = document.getElementById('unificar-busca');
+  if (busca) busca.value = '';
+  const resultados = document.getElementById('unificar-busca-resultados');
+  if (resultados) { resultados.classList.add('hidden'); resultados.innerHTML = ''; }
+  const clis = computeClientes().filter(c => unificarSelecionados.has(nameKey(c.nome)));
+  renderUnificarModal(clis);
+}
+
+function atualizarUnificarPreview() {
+  const preview = document.getElementById('unificar-preview');
+  if (!preview) return;
+  const clis = computeClientes().filter(c => unificarSelecionados.has(nameKey(c.nome)));
+  const outros = clis.filter(c => nameKey(c.nome) !== nameKey(unificarNomePrincipal));
+  const totalVendas = clis.reduce((sum, c) => sum + c.pedidos, 0);
+  const totalValor = clis.reduce((sum, c) => sum + c.total, 0);
+  if (!unificarNomePrincipal || !outros.length) { preview.innerHTML = ''; return; }
+  preview.innerHTML = `${totalVendas} venda${totalVendas === 1 ? '' : 's'} (${fmtBR(totalValor)}) de ${outros.map(c => `"${escapeHtml(c.nome)}"`).join(', ')} serão renomeadas para <strong>${escapeHtml(unificarNomePrincipal)}</strong>. Telefone, e-mail e CPF/CNPJ vazios em um lado serão preenchidos com o do outro.`;
+}
+
+async function confirmarUnificacaoClientes() {
+  if (!unificarNomePrincipal || unificarSelecionados.size < 2) return;
+  const clis = computeClientes().filter(c => unificarSelecionados.has(nameKey(c.nome)));
+  const nomes = clis.map(c => c.nome);
+  const outros = nomes.filter(n => nameKey(n) !== nameKey(unificarNomePrincipal));
+  if (!confirm(`Unificar ${nomes.length} clientes sob "${unificarNomePrincipal}"?\n\nOs nomes "${outros.join('", "')}" deixarão de aparecer como clientes separados. Essa ação renomeia as vendas no histórico e não tem um botão de desfazer — mas nada é apagado, só renomeado.`)) return;
+  await executarUnificacaoClientes(nomes, unificarNomePrincipal);
+  fecharUnificacaoClientes();
+  unificarSelecionados = new Set();
+  const btn = document.getElementById('btn-unificar-clientes');
+  if (btn) btn.classList.add('hidden');
+  alert('Clientes unificados com sucesso.');
+}
+
+async function executarUnificacaoClientes(nomesSelecionados, nomePrincipal) {
+  ensureLocalIds();
+  const nomesParaMesclar = nomesSelecionados.filter(n => nameKey(n) !== nameKey(nomePrincipal));
+  if (!nomesParaMesclar.length) return;
+
+  let clienteIdx = state.clientes.findIndex(c => nameKey(c.nome) === nameKey(nomePrincipal));
+  let fiscalIdx = state.fiscais.findIndex(f => nameKey(f.nome) === nameKey(nomePrincipal));
+  let clientePrincipal = clienteIdx >= 0 ? { ...state.clientes[clienteIdx] } : { nome: nomePrincipal, telefone: '', email: '', metadata: {} };
+  let fiscalPrincipal = fiscalIdx >= 0 ? { ...state.fiscais[fiscalIdx] } : null;
+
+  const idsClientesRemover = [];
+  const idsFiscaisRemover = [];
+  const aliasNomes = [nomePrincipal];
+
+  nomesParaMesclar.forEach(nomeOriginal => {
+    const cli = state.clientes.find(c => nameKey(c.nome) === nameKey(nomeOriginal));
+    const fis = state.fiscais.find(f => nameKey(f.nome) === nameKey(nomeOriginal));
+    if (cli) {
+      if (!clientePrincipal.telefone && cli.telefone) clientePrincipal.telefone = cli.telefone;
+      if (!clientePrincipal.email && cli.email) clientePrincipal.email = cli.email;
+      clientePrincipal.metadata = { ...cli.metadata, ...clientePrincipal.metadata };
+      idsClientesRemover.push(cli.id);
+    }
+    if (fis) {
+      if (!fiscalPrincipal) {
+        fiscalPrincipal = { ...fis, nome: nomePrincipal };
+      } else {
+        if (!fiscalPrincipal.doc && fis.doc) fiscalPrincipal.doc = fis.doc;
+        if (!fiscalPrincipal.cpf && fis.cpf) fiscalPrincipal.cpf = fis.cpf;
+        if (!fiscalPrincipal.cnpj && fis.cnpj) fiscalPrincipal.cnpj = fis.cnpj;
+        if (!fiscalPrincipal.endereco && fis.endereco) fiscalPrincipal.endereco = fis.endereco;
+        if (!fiscalPrincipal.cep && fis.cep) fiscalPrincipal.cep = fis.cep;
+        if (!fiscalPrincipal.cidade && fis.cidade) fiscalPrincipal.cidade = fis.cidade;
+        if (!fiscalPrincipal.cidade_nome && fis.cidade_nome) fiscalPrincipal.cidade_nome = fis.cidade_nome;
+        if (!fiscalPrincipal.estado && fis.estado) fiscalPrincipal.estado = fis.estado;
+        fiscalPrincipal.metadata = { ...fis.metadata, ...fiscalPrincipal.metadata };
+      }
+      idsFiscaisRemover.push(fis.id);
+    }
+    aliasNomes.push(nomeOriginal);
+    state.vendas.forEach(v => { if (nameKey(v.cliente) === nameKey(nomeOriginal)) v.cliente = nomePrincipal; });
+    state.notas_fiscais?.forEach(nf => { if (nameKey(nf.nome_cliente) === nameKey(nomeOriginal)) nf.nome_cliente = nomePrincipal; });
+  });
+
+  clientePrincipal.nome = nomePrincipal;
+  if (!clientePrincipal.id) clientePrincipal.id = safeId('c', [nomePrincipal, clientePrincipal.telefone, clientePrincipal.email]);
+  if (clienteIdx >= 0) state.clientes[clienteIdx] = clientePrincipal;
+  else state.clientes.push(clientePrincipal);
+
+  if (fiscalPrincipal) {
+    fiscalPrincipal.nome = nomePrincipal;
+    if (!fiscalPrincipal.id) fiscalPrincipal.id = safeId('f', [nomePrincipal, fiscalPrincipal.doc]);
+    if (fiscalIdx >= 0) state.fiscais[fiscalIdx] = fiscalPrincipal;
+    else state.fiscais.push(fiscalPrincipal);
+  }
+
+  state.clientes = state.clientes.filter(c => !idsClientesRemover.includes(c.id));
+  state.fiscais = state.fiscais.filter(f => !idsFiscaisRemover.includes(f.id));
+
+  // Salva localmente (localStorage) — a sincronização remota abaixo é feita
+  // diretamente e sem depender do debounce único de STORE.save, que cancela
+  // sincronizações anteriores quando várias coleções são salvas em sequência.
+  STORE.save('clientes', state.clientes);
+  STORE.save('fiscais', state.fiscais);
+  STORE.save('vendas', state.vendas);
+  STORE.save('notas_fiscais', state.notas_fiscais || []);
+
+  const client = getSupabaseClient();
+  const session = await getSupabaseSession();
+  if (client && session) {
+    for (const nomeOriginal of nomesParaMesclar) {
+      await client.from('crm_vendas').update({ cliente: nomePrincipal }).eq('cliente', nomeOriginal);
+    }
+    await client.from('crm_clientes').upsert(clienteToRow(clientePrincipal), { onConflict: 'id' });
+    if (fiscalPrincipal) await client.from('crm_fiscais').upsert(fiscalToRow(fiscalPrincipal), { onConflict: 'id' });
+    for (const id of idsClientesRemover) await client.from('crm_clientes').delete().eq('id', id);
+    for (const id of idsFiscaisRemover) await client.from('crm_fiscais').delete().eq('id', id);
+  }
+
+  const docFinal = fiscalPrincipal?.doc || null;
+  const aliasSeed = [...new Set(aliasNomes.map(n => nameKey(n)))]
+    .map(key => ({ alias_normalizado: key, cliente_nome: nomePrincipal, doc: docFinal }));
+  if (aliasSeed.length) {
+    state.clienteAliases = [...(state.clienteAliases || []).filter(a => !(a.cliente_nome === nomePrincipal && aliasSeed.some(s => s.alias_normalizado === a.alias_normalizado))), ...aliasSeed];
+    clienteAliasMapCache = null;
+    STORE.save('clienteAliases', state.clienteAliases);
+    if (client && session) {
+      await client.from('crm_client_aliases').upsert(aliasSeed, { onConflict: 'alias_normalizado,cliente_nome' });
+    }
+  }
+
+  renderClientes();
+  renderDash();
+  updateClientAlert();
+  if (typeof updateSaleReviewBadge === 'function') updateSaleReviewBadge();
+  if (!document.getElementById('relatorios-qualidade')?.classList.contains('hidden')) renderQualidade();
+}
+
 function renderFiscal() {
   ensureLocalIds();
   const tbody = document.getElementById('fiscalTable');
@@ -23035,7 +23270,7 @@ init();
     if (fiscal) fiscal.classList.add('hidden');
     const thead = document.querySelector('#sub-crm .table-card table thead');
     if (thead) {
-      thead.innerHTML = '<tr><th>Cliente</th><th>Telefone</th><th>CPF/CNPJ</th><th>Última compra</th><th>Status</th><th>Ações</th></tr>';
+      thead.innerHTML = '<tr><th style="width:34px;"><input type="checkbox" id="chk-unificar-todos" onclick="toggleTodosUnificar(this)" data-tip="Selecionar todos os visíveis" class="gso-has-tip"></th><th>Cliente</th><th>Telefone</th><th>CPF/CNPJ</th><th>Última compra</th><th>Status</th><th>Ações</th></tr>';
     }
   }
 
@@ -23080,11 +23315,12 @@ init();
     if (!tbody) return;
     if (!rows.length) {
       if (typeof gsoClearPagination === 'function') gsoClearPagination('clientesPagination');
-      tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Nenhum cliente cadastrado ainda</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Nenhum cliente cadastrado ainda</td></tr>';
       return;
     }
     if (typeof gsoRenderPagination === 'function') gsoRenderPagination('clientesPagination', 'clientes', pageInfo);
     tbody.innerHTML = pageInfo.rows.map(c => '<tr>' +
+      '<td><input type="checkbox" class="chk-unificar-linha" ' + (typeof unificarSelecionados !== 'undefined' && unificarSelecionados.has(nameKey(c.nome)) ? 'checked' : '') + ' onchange="atualizarSelecaoUnificar(this, ' + (typeof attrJsString === 'function' ? attrJsString(c.nome) : JSON.stringify(c.nome || '')) + ')"></td>' +
       '<td><strong>' + esc(c.nome || '—') + '</strong></td>' +
       '<td>' + esc(c.telefone || '—') + '</td>' +
       '<td>' + esc(clienteDocResumoCompleto(c.nome)) + '</td>' +
@@ -27842,6 +28078,24 @@ body:not(.theme-dark) .btn.btn-primary.btn-nova-venda:hover, body.theme-dark .bt
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(176,50,47,.48), inset 0 1px 0 rgba(255,255,255,.25) !important;
 }
+
+/* Unificar clientes */
+#clientesTable .chk-unificar-linha, #chk-unificar-todos { width: 16px; height: 16px; cursor: pointer; }
+.unificar-linha { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border, #E3E1D8); margin-bottom: 8px; cursor: pointer; }
+.unificar-linha input[type="radio"] { flex-shrink: 0; width: 16px; height: 16px; cursor: pointer; }
+.unificar-linha-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.unificar-linha-info span { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.theme-dark .unificar-linha { background: var(--crm-surface-muted) !important; border-color: var(--crm-border) !important; }
+.unificar-adicionar { position: relative; margin: 10px 0; }
+.unificar-busca-resultados { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40; max-height: 220px; overflow-y: auto; background: var(--surface-1, #fff); border: 1px solid var(--border, #E3E1D8); border-radius: 10px; box-shadow: 0 12px 28px rgba(0,0,0,.16); }
+body.theme-dark .unificar-busca-resultados { background: var(--crm-surface, #2A2A2A) !important; border-color: var(--crm-border) !important; }
+.unificar-busca-item { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 13px; }
+.unificar-busca-item:hover { background: rgba(0,0,0,.05); }
+body.theme-dark .unificar-busca-item:hover { background: rgba(255,255,255,.06); }
+.unificar-busca-item span { color: var(--text-2); font-size: 12px; }
+.unificar-preview { font-size: 13px; line-height: 1.5; padding: 12px 14px; border-radius: 10px; background: rgba(201,60,55,.08); border: 1px solid rgba(201,60,55,.3); margin-top: 4px; }
+body.theme-dark .unificar-preview { background: rgba(201,60,55,.16) !important; border-color: rgba(201,60,55,.4) !important; }
+.unificar-preview:empty { display: none; }
 </style>
 </body>
 </html>
