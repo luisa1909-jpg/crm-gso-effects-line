@@ -21956,11 +21956,11 @@ function parseMoneyValue(value) {
 }
 
 function parseDateValue(value) {
-  if (!value) return new Date().toISOString().split('T')[0];
-  if (value instanceof Date && !isNaN(value)) return value.toISOString().split('T')[0];
+  if (!value) return dashboardDateKey(new Date());
+  if (value instanceof Date && !isNaN(value)) return dashboardDateKey(value);
   if (typeof value === 'number' && window.XLSX) {
     const parsed = XLSX.SSF.parse_date_code(value);
-    if (parsed) return new Date(parsed.y, parsed.m - 1, parsed.d).toISOString().split('T')[0];
+    if (parsed) return dashboardDateKey(new Date(parsed.y, parsed.m - 1, parsed.d));
   }
   const text = String(value).trim();
   const br = text.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
@@ -21969,7 +21969,7 @@ function parseDateValue(value) {
     return `${year}-${String(br[2]).padStart(2, '0')}-${String(br[1]).padStart(2, '0')}`;
   }
   const dt = new Date(text);
-  return isNaN(dt) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0];
+  return isNaN(dt) ? dashboardDateKey(new Date()) : dashboardDateKey(dt);
 }
 
 function pickRowValue(row, aliases) {
@@ -22329,6 +22329,10 @@ function printSaleLabel(venda) {
 // ============ NOVA VENDA ============
 let currentSaleItems = [];
 let editingVendaId = null;
+// Guarda a data da última venda salva nesta sessão, para pré-preencher a próxima
+// "Nova venda" com o mesmo dia — útil para lançar várias vendas atrasadas em sequência
+// sem ter que redigitar a data toda vez (o que fazia alguma ficar com o dia de hoje por engano).
+let lastVendaDataUsada = null;
 
 function cancelarNovaOuEdicaoVenda() {
   const wasEditing = Boolean(editingVendaId);
@@ -22340,7 +22344,7 @@ function initEditVenda(id) {
   const venda = state.vendas.find(v => v.id === id);
   if (!venda) { editingVendaId = null; initNova(); return; }
 
-  document.getElementById('f-data').value = String(venda.data || '').slice(0, 10) || new Date().toISOString().split('T')[0];
+  document.getElementById('f-data').value = String(venda.data || '').slice(0, 10) || dashboardDateKey(new Date());
   document.getElementById('f-cliente').value = venda.cliente || '';
   document.getElementById('f-valor').value = venda.valor || '';
   document.getElementById('f-obs').value = venda.obs || '';
@@ -22480,7 +22484,7 @@ function initNova() {
   if (titleEl) titleEl.textContent = 'Nova venda';
   if (subEl) subEl.textContent = 'Registrar pedido';
   if (saveBtn) saveBtn.textContent = 'Salvar venda';
-  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-data').value = lastVendaDataUsada || dashboardDateKey(new Date());
   document.getElementById('f-cliente').value = '';
   document.getElementById('f-valor').value = '';
   document.getElementById('f-desconto').value = 'R$ 0,00';
@@ -22645,6 +22649,7 @@ async function salvarVenda() {
   state.vendas.push(venda);
   STORE.save('vendas', state.vendas);
   updateSaleReviewBadge();
+  lastVendaDataUsada = venda.data;
   if (!clienteCadastrado) addPendingClientAlert(aliasResolvido.cliente, numeroVenda);
   const imprimir = confirm('✅ Venda nº ' + numeroVenda + ' registrada!\n\n' + aliasResolvido.cliente + ' — ' + fmtBR(valor) + (!clienteCadastrado ? '\n\nCliente ainda não cadastrado: deixei um aviso no menu Clientes.' : '') + '\n\nDeseja imprimir a nota simplificada desta venda agora?');
   if (imprimir) printSaleLabel(venda);
