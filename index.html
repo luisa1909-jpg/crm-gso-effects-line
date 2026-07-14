@@ -13015,6 +13015,10 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
       <span class="nav-label">Vendas</span>
       <span class="client-alert-badge hidden" id="saleReviewBadge" onclick="event.stopPropagation(); abrirRevisaoVendas();">0</span>
     </div>
+    <div class="nav-item hidden" data-view="lojista" data-label="Lojista" id="nav-item-lojista" onclick="navTo('lojista')">
+      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6l1-3.5h10L14 6"/><path d="M2.5 6h11v7.5h-11z"/><path d="M6 9v2.5M10 9v2.5"/></svg>
+      <span class="nav-label">Lojista</span>
+    </div>
 		    <div class="nav-item" data-view="clientes" data-label="Clientes" onclick="navTo('clientes')">
 		      <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>
 		      <span class="nav-label">Clientes</span>
@@ -13117,6 +13121,45 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
           <tbody id="vendasTable"></tbody>
         </table>
           <div id="vendasPagination" class="gso-pagination"></div>
+      </div>
+    </div>
+
+    <!-- ============ LOJISTA ============ -->
+    <div id="view-lojista" class="hidden">
+      <div class="header">
+        <div>
+          <div class="h-title">Lojista</div>
+          <div class="h-sub"><span id="lojista-count">0</span> vendas para lojistas/revendedores</div>
+        </div>
+        <div class="h-actions">
+          <button class="btn btn-primary" onclick="openVendaLojistaModal()">+ Nova venda lojista</button>
+        </div>
+      </div>
+
+      <div class="filter-panel">
+        <input type="text" class="input" id="searchLojista" placeholder="Buscar lojista, produto..." oninput="renderVendasLojista()">
+        <input type="date" class="input" id="filterDataLojista" title="Filtrar por dia" aria-label="Filtrar por dia" onchange="renderVendasLojista()">
+        <button class="btn btn-soft" onclick="document.getElementById('searchLojista').value='';document.getElementById('filterDataLojista').value='';renderVendasLojista();">Limpar</button>
+      </div>
+
+      <div class="card table-card">
+        <table class="sales-table mobile-card-table">
+          <colgroup><col style="width:10%"><col style="width:20%"><col style="width:20%"><col style="width:9%"><col style="width:6%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:5%"></colgroup>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Lojista</th>
+              <th>Produto</th>
+              <th>Aroma</th>
+              <th class="num">Qtd</th>
+              <th class="num">Valor</th>
+              <th>Pagamento</th>
+              <th>Vendedor</th>
+              <th class="col-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="lojistaTable"></tbody>
+        </table>
       </div>
     </div>
 
@@ -14814,6 +14857,106 @@ body.theme-dark .calc-unit-line { border-color: var(--crm-border, #3C3C3C); }
   </div>
 </div>
 
+<!-- ============ MODAL LOJISTA ============ -->
+<div class="modal-bg" id="modal-lojista">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="modal-lojista-title">Nova venda lojista</div>
+    <input type="hidden" id="ml-id">
+    <div class="form-row form-r2">
+      <div>
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="ml-data">
+      </div>
+      <div>
+        <label class="form-label">Lojista / Revendedor</label>
+        <input type="text" class="form-input" id="ml-cliente" placeholder="Nome do lojista">
+      </div>
+    </div>
+    <div class="form-row form-r3">
+      <div>
+        <label class="form-label">Produto</label>
+        <select class="form-input" id="ml-produto">
+          <option>Palco</option>
+          <option>DJs and Clubs</option>
+          <option>Haze</option>
+          <option>Haze Oil</option>
+          <option>CO₂ Simulator</option>
+          <option>Low Fog</option>
+          <option>Snow</option>
+          <option>Bubble</option>
+          <option>Clean</option>
+          <option>Top Up - Limpeza a Seco</option>
+          <option>Top Up - Lentes e Telas Cristalinas</option>
+          <option>Álcool Isopropílico</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Tamanho</label>
+        <select class="form-input" id="ml-tamanho">
+          <option>5L</option>
+          <option>1L</option>
+          <option>150g</option>
+          <option>120mL</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Aroma</label>
+        <select class="form-input" id="ml-aroma">
+          <option>Neutro</option>
+          <option>Tropical</option>
+          <option>Tutti Frutti</option>
+          <option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row form-r2">
+      <div>
+        <label class="form-label">Qtd</label>
+        <input type="number" class="form-input" id="ml-qtd" value="1" min="1">
+      </div>
+      <div>
+        <label class="form-label">Valor cobrado do lojista (R$)</label>
+        <input type="number" class="form-input" id="ml-valor" placeholder="0,00" step="0.01">
+      </div>
+    </div>
+    <div class="form-row form-r2">
+      <div>
+        <label class="form-label">Pagamento</label>
+        <select class="form-input" id="ml-pag">
+          <option>Dinheiro</option>
+          <option>Pix</option>
+          <option>Débito</option>
+          <option>Crédito</option>
+          <option>Anotado</option>
+          <option>Boleto</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Vendedor</label>
+        <select class="form-input" id="ml-vend">
+          <option>Tuanny Santana</option>
+          <option>Guilherme Oliveira</option>
+          <option>Luísa Oliveira</option>
+          <option>Thiago Santana</option>
+          <option>Cleide Oliveira</option>
+          <option>GSO Effects Line</option>
+          <option>GSO Eletrônica</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">Observações</label>
+        <input type="text" class="form-input" id="ml-obs" placeholder="Opcional">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="document.getElementById('modal-lojista').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" id="ml-save-btn" onclick="salvarVendaLojista()">Salvar venda</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL ESTOQUE ============ -->
 <div class="modal-bg" id="modal-estoque">
   <div class="modal modal-wide">
@@ -15500,6 +15643,7 @@ async function syncCollectionToSupabase(key, data) {
   if (!session) return;
   ensureLocalIds();
   if (key === 'vendas') await upsertChunks('crm_vendas', data.map(saleToRow));
+  if (key === 'vendasLojista') await upsertChunks('crm_vendas_lojista', data.map(saleToRow));
   if (key === 'clientes') await upsertChunks('crm_clientes', data.map(clienteToRow));
   if (key === 'fiscais') await upsertChunks('crm_fiscais', data.map(fiscalToRow));
   if (key === 'produtos') {
@@ -15511,7 +15655,7 @@ async function syncCollectionToSupabase(key, data) {
 }
 
 function queueRemoteSave(key, data) {
-  if (remoteHydrating || !['vendas','clientes','fiscais','produtos'].includes(key)) return;
+  if (remoteHydrating || !['vendas','vendasLojista','clientes','fiscais','produtos'].includes(key)) return;
   clearTimeout(remoteSaveTimer);
   remoteSaveTimer = setTimeout(() => {
     setSyncStatus('syncing', 'Sincronizando...');
@@ -15538,6 +15682,7 @@ async function syncAllToSupabase(showAlert = false) {
     await upsertChunks('crm_clientes', state.clientes.map(clienteToRow));
     await upsertChunks('crm_fiscais', state.fiscais.map(fiscalToRow));
     await upsertChunks('crm_vendas', state.vendas.map(saleToRow));
+    if (isAdminUser()) await upsertChunks('crm_vendas_lojista', state.vendasLojista.map(saleToRow));
     STORE.saveAll(state);
     setSyncStatus('online', 'Sincronizado');
     updateImportStatus('Dados locais sincronizados com o Supabase.');
@@ -15555,15 +15700,16 @@ async function loadRemoteState() {
   if (!client || !session) return;
   try {
     setSyncStatus('syncing', 'Carregando Supabase...');
-    const [vendasRes, clientesRes, fiscaisRes, produtosRes, profileRes, aliasesRes] = await Promise.all([
+    const [vendasRes, vendasLojistaRes, clientesRes, fiscaisRes, produtosRes, profileRes, aliasesRes] = await Promise.all([
       client.from('crm_vendas').select('*').order('data', { ascending: false }),
+      isAdminUser() ? client.from('crm_vendas_lojista').select('*').order('data', { ascending: false }) : Promise.resolve({ data: [] }),
       client.from('crm_clientes').select('*').order('nome', { ascending: true }),
       client.from('crm_fiscais').select('*').order('nome', { ascending: true }),
       client.from('crm_produtos').select('*').order('produto', { ascending: true }),
       client.from('crm_profiles').select('*').eq('id', session.user.id).maybeSingle(),
       client.from('crm_client_aliases').select('alias_normalizado,cliente_nome,doc')
     ]);
-    [vendasRes, clientesRes, fiscaisRes, produtosRes, profileRes, aliasesRes].forEach(res => {
+    [vendasRes, vendasLojistaRes, clientesRes, fiscaisRes, produtosRes, profileRes, aliasesRes].forEach(res => {
       if (res.error) throw res.error;
     });
 
@@ -15581,6 +15727,7 @@ async function loadRemoteState() {
       }, { onConflict: 'id' });
     }
     if (vendasRes.data.length) state.vendas = vendasRes.data.map(rowToSale);
+    if (vendasLojistaRes.data.length) state.vendasLojista = vendasLojistaRes.data.map(rowToSale);
     if (clientesRes.data.length) state.clientes = clientesRes.data.map(rowToCliente);
     if (fiscaisRes.data.length) state.fiscais = fiscaisRes.data.map(rowToFiscal);
     if (produtosRes.data.length) state.produtos = produtosRes.data.map(rowToProduto);
@@ -15590,7 +15737,7 @@ async function loadRemoteState() {
     remoteHydrating = false;
     if (catalogChanged) await cleanupCatalogProductsInSupabase();
 
-    if (!vendasRes.data.length && (state.vendas.length || state.clientes.length || state.fiscais.length || state.produtos.length)) {
+    if (!vendasRes.data.length && (state.vendas.length || state.vendasLojista.length || state.clientes.length || state.fiscais.length || state.produtos.length)) {
       await syncAllToSupabase(false);
     }
     setSyncStatus('online', 'Online');
@@ -15613,6 +15760,7 @@ function setupRealtime() {
   supabaseRealtimeChannel = client
     .channel('gso-crm-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_vendas' }, scheduleRemoteRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_vendas_lojista' }, scheduleRemoteRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_clientes' }, scheduleRemoteRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_produtos' }, scheduleRemoteRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_fiscais' }, scheduleRemoteRefresh)
@@ -16785,6 +16933,7 @@ const STORE = {
         foto: null
       })),
 	      vendas: JSON.parse(localStorage.getItem('gso_vendas') || '[]'),
+	      vendasLojista: JSON.parse(localStorage.getItem('gso_vendasLojista') || '[]'),
 	      clientes: JSON.parse(localStorage.getItem('gso_clientes') || '[]'),
 	      fiscais: JSON.parse(localStorage.getItem('gso_fiscais') || '[]'),
 	      clienteAliases: JSON.parse(localStorage.getItem('gso_clienteAliases') || '[]'),
@@ -17674,7 +17823,7 @@ function showApp() {
 }
 
 // ============ NAVEGAÇÃO ============
-const VIEWS = ['vendas','boletos','notas','clientes','estoque','produtos','transmissao','mensagens','relatorios','calculadora','inteligencia','config','perfil','nova'];
+const VIEWS = ['vendas','lojista','boletos','notas','clientes','estoque','produtos','transmissao','mensagens','relatorios','calculadora','inteligencia','config','perfil','nova'];
 function applySidebarPreference() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
@@ -17694,6 +17843,10 @@ function toggleSidebarCollapsed() {
 }
 
 function navTo(view) {
+  if (view === 'lojista' && !isAdminUser()) {
+    alert('Apenas administradores têm acesso à aba Lojista.');
+    view = 'vendas';
+  }
   VIEWS.forEach(v => {
     document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
   });
@@ -17705,6 +17858,7 @@ function navTo(view) {
   updateMobileChrome(view);
 
   if (view === 'vendas') renderVendas();
+  if (view === 'lojista') renderVendasLojista();
   if (view === 'boletos') renderBoletos();
   if (view === 'notas') renderNotasFiscais();
   if (view === 'clientes') {
@@ -18603,6 +18757,122 @@ async function excluirVenda(id) {
   renderVendas();
   renderDash();
   if (!document.getElementById('view-clientes').classList.contains('hidden')) renderClientes();
+}
+
+function nextSaleNumberLojista() {
+  return state.vendasLojista.reduce((max, v) => Math.max(max, parseInt(v.numeroVenda, 10) || 0), 0) + 1;
+}
+
+function renderVendasLojista() {
+  const countEl = document.getElementById('lojista-count');
+  if (countEl) countEl.textContent = state.vendasLojista.length.toLocaleString('pt-BR');
+  const term = document.getElementById('searchLojista')?.value.toLowerCase() || '';
+  const dataFiltro = document.getElementById('filterDataLojista')?.value || '';
+  let rows = [...state.vendasLojista].sort((a, b) => new Date(b.data) - new Date(a.data));
+  if (term) rows = rows.filter(r =>
+    (r.cliente || '').toLowerCase().includes(term) ||
+    (r.produto || '').toLowerCase().includes(term) ||
+    (r.vendedor || '').toLowerCase().includes(term)
+  );
+  if (dataFiltro) rows = rows.filter(r => dashboardDateKey(r.data) === dataFiltro);
+  const tbody = document.getElementById('lojistaTable');
+  if (!tbody) return;
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="table-empty">Nenhuma venda para lojista registrada ainda</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td data-label="Data">${typeof gsoDateCell==='function'?gsoDateCell(r.data):fmtDate(r.data)}</td>
+        <td data-label="Lojista">${escapeHtml(r.cliente || '')}</td>
+        <td data-label="Produto">${escapeHtml(r.produto || '')}</td>
+        <td data-label="Aroma"><span class="pill pill-aroma ${typeof gsoAromaClass==='function'?gsoAromaClass(r.aroma):''}">${escapeHtml(r.aroma || 'Neutro')}</span></td>
+        <td data-label="Qtd" class="num">${r.qtd}</td>
+        <td data-label="Valor" class="num">${fmtBR(r.valor)}</td>
+        <td data-label="Pagamento">${escapeHtml(r.pagamento || '')}</td>
+        <td data-label="Vendedor"><span class="pill pill-blue">${escapeHtml(r.vendedor || '')}</span></td>
+        <td data-label="Ações">
+          <div class="row-actions">
+            <button class="btn btn-small" onclick="openVendaLojistaModal('${r.id}')">Editar</button>
+            <button class="btn btn-small btn-danger" onclick="excluirVendaLojista('${r.id}')">Apagar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+}
+
+function openVendaLojistaModal(id = '') {
+  if (!isAdminUser()) { alert('Apenas administradores podem lançar vendas para lojistas.'); return; }
+  const venda = id ? state.vendasLojista.find(v => v.id === id) : null;
+  document.getElementById('ml-id').value = venda ? venda.id : '';
+  document.getElementById('ml-data').value = venda ? String(venda.data || '').slice(0, 10) : dashboardDateKey(new Date());
+  document.getElementById('ml-cliente').value = venda?.cliente || '';
+  document.getElementById('ml-produto').value = venda?.produto || 'Palco';
+  document.getElementById('ml-tamanho').value = venda?.tamanho || '5L';
+  document.getElementById('ml-aroma').value = venda?.aroma || 'Neutro';
+  document.getElementById('ml-qtd').value = venda?.qtd || 1;
+  document.getElementById('ml-valor').value = venda?.valor || '';
+  document.getElementById('ml-pag').value = venda?.pagamento || 'Dinheiro';
+  document.getElementById('ml-vend').value = venda?.vendedor || 'Luísa Oliveira';
+  document.getElementById('ml-obs').value = venda?.obs || '';
+  const title = document.getElementById('modal-lojista-title');
+  if (title) title.textContent = venda ? 'Editar venda lojista' : 'Nova venda lojista';
+  document.getElementById('modal-lojista').classList.add('show');
+}
+
+async function salvarVendaLojista() {
+  if (!isAdminUser()) { alert('Apenas administradores podem lançar vendas para lojistas.'); return; }
+  const cliente = document.getElementById('ml-cliente').value.trim();
+  const valor = parseMoneyValue(document.getElementById('ml-valor').value);
+  if (!cliente || isNaN(valor) || valor <= 0) {
+    alert('Preencha o lojista e o valor cobrado.');
+    return;
+  }
+  const id = document.getElementById('ml-id').value;
+  const isEditing = Boolean(id);
+  const existing = isEditing ? state.vendasLojista.find(v => v.id === id) : null;
+  const numeroVenda = isEditing ? existing.numeroVenda : nextSaleNumberLojista();
+  const vendaFields = {
+    numeroVenda,
+    data: document.getElementById('ml-data').value,
+    cliente,
+    produto: document.getElementById('ml-produto').value,
+    tamanho: document.getElementById('ml-tamanho').value,
+    aroma: document.getElementById('ml-aroma').value,
+    qtd: parseInt(document.getElementById('ml-qtd').value, 10) || 1,
+    valor,
+    pagamento: document.getElementById('ml-pag').value,
+    vendedor: canonicalSellerName(document.getElementById('ml-vend').value),
+    obs: document.getElementById('ml-obs').value.trim()
+  };
+  if (isEditing) {
+    Object.assign(existing, vendaFields);
+    existing.editedAt = new Date().toISOString();
+  } else {
+    state.vendasLojista.push({ id: 'vl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), ...vendaFields });
+  }
+  STORE.save('vendasLojista', state.vendasLojista);
+  document.getElementById('modal-lojista').classList.remove('show');
+  renderVendasLojista();
+}
+
+async function excluirVendaLojista(id) {
+  if (!isAdminUser()) { alert('Apenas administradores podem excluir vendas de lojistas.'); return; }
+  const venda = state.vendasLojista.find(v => v.id === id);
+  if (!venda) return;
+  const label = venda.numeroVenda ? `nº ${venda.numeroVenda}` : venda.cliente;
+  if (!confirm(`Excluir a venda lojista ${label}?`)) return;
+  state.vendasLojista = state.vendasLojista.filter(v => v.id !== id);
+  STORE.save('vendasLojista', state.vendasLojista);
+  const client = getSupabaseClient();
+  const session = await getSupabaseSession();
+  if (client && session) await client.from('crm_vendas_lojista').delete().eq('id', id);
+  renderVendasLojista();
+}
+
+function updateSidebarForRole() {
+  const navItem = document.getElementById('nav-item-lojista');
+  if (navItem) navItem.classList.toggle('hidden', !isAdminUser());
 }
 
 function validatePdfFile(file) {
@@ -22793,6 +23063,7 @@ function enhanceButtonTooltips() {
 function renderAll() {
   normalizeSellerNames();
   syncEstoqueFromProdutos(true);
+  updateSidebarForRole();
   renderDash();
   updateAvatars();
   updateClientAlert();
