@@ -23773,6 +23773,7 @@ init();
 .intel-wa.is-disabled { background: var(--surface-2, #eef3f7); color: var(--text-2); pointer-events: none; }
 
 .intel-chart-wrap { position: relative; height: 280px; }
+.intel-chart-wrap-sm { height: 190px; }
 .intel-empty { padding: 28px; text-align: center; color: var(--text-2); font-size: 13px; }
 
 .intel-seg-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
@@ -24262,11 +24263,11 @@ function intelRenderOverview() {
     <div class="intel-grid cols-2">
       <div class="card">
         <div class="card-title">Faturamento por mês</div><div class="card-sub">Evolução mensal registrada</div>
-        <div class="intel-chart-wrap"><canvas id="intel-chart-mensal"></canvas></div>
+        <div class="intel-chart-wrap intel-chart-wrap-sm"><canvas id="intel-chart-mensal"></canvas></div>
       </div>
       <div class="card">
         <div class="card-title">Mix de pagamento</div><div class="card-sub">Faturamento por forma de pagamento</div>
-        <div class="intel-chart-wrap"><canvas id="intel-chart-pgto"></canvas></div>
+        <div class="intel-chart-wrap intel-chart-wrap-sm"><canvas id="intel-chart-pgto"></canvas></div>
       </div>
     </div>
   `;
