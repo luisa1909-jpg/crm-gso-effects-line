@@ -15288,7 +15288,7 @@ function rowToSale(r) {
   return {
     id: r.id,
     numeroVenda: r.numero_venda,
-    data: r.data,
+    data: typeof r.data === 'string' ? r.data.slice(0, 10) : r.data,
     cliente: r.cliente,
     produto: r.produto,
     tamanho: r.tamanho || '',
