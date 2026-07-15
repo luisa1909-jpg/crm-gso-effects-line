@@ -26021,13 +26021,25 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     bubble: { M1: 200 }
   };
   var INS_KEYS = ['G1', 'P1', 'A1', 'A2', 'M1'];
-  function insKeysExtra() { return Object.keys(store.insumosLabels || {}); }
-  function insKeysAll() { return INS_KEYS.concat(insKeysExtra()); }
+  // Todas as matérias-primas (as 5 originais + as que a usuária adicionar) vivem em
+  // store.insumosLabels — permite adicionar e remover qualquer uma delas, inclusive as
+  // originais. Na primeira vez que o navegador carrega essa loja, semeamos as 5 originais
+  // aqui (uma única vez, guardado por insumosBaseSeeded) para não perder nada de quem já
+  // vinha usando a calculadora antes dessa mudança.
+  function ensureInsumosLabels() {
+    store.insumosLabels = store.insumosLabels || {};
+    if (!store.insumosBaseSeeded) {
+      INS_KEYS.forEach(function (k) { if (!(k in store.insumosLabels)) store.insumosLabels[k] = k; });
+      store.insumosBaseSeeded = true;
+      save();
+    }
+  }
+  function insKeysAll() { return Object.keys(store.insumosLabels || {}); }
   function insLabel(key) { return (store.insumosLabels && store.insumosLabels[key]) || key; }
   function normNome(n) { return String(n || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
   function insumos() {
     var p = Object.assign({}, INSUMOS_DEF, store.insumos || {});
-    insKeysExtra().forEach(function (key) { if (p[key] == null) p[key] = 0; });
+    insKeysAll().forEach(function (key) { if (p[key] == null) p[key] = 0; });
     return p;
   }
   function materiais() { return Object.assign({}, MATERIAIS_DEF, store.materiais || {}); }
@@ -26064,7 +26076,6 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     renderCustos(); renderFormulacao(); renderEstrategia(); refreshResultado();
   }
   function removerMateriaPrima(key) {
-    if (INS_KEYS.indexOf(key) >= 0) return;
     var nome = insLabel(key);
     if (!window.confirm('Remover "' + nome + '"? O valor/L e as quantidades já usadas nas receitas dos produtos também serão apagados.')) return;
     if (store.insumosLabels) delete store.insumosLabels[key];
@@ -26495,21 +26506,25 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
   function selOpts(list, cur, todosLabel) {
     return '<option value="">' + todosLabel + '</option>' + list.map(function (v) { return '<option' + (v === cur ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join('');
   }
-  function renderFormulacao() {
-    var el = $('#gc-formulacao'); if (!el) return;
-    el.innerHTML = mpCardHTML();
-  }
-  function renderCustos() {
-    var el = $('#gc-custos'); if (!el) return;
+  function paramsKvHTML() {
     var P = params();
-    var fil = UI.filtros;
-    var paramsKv = [
+    return [
       ['Fiscal (%)', 'fiscal'], ['Taxa financeira crédito (%)', 'taxa'], ['Margem mínima (%)', 'margemMin'],
       ['Margem ideal (%)', 'margem'], ['Margem premium (%)', 'margemPremium'], ['Litros por batelada', 'batelada'],
       ['Desconto máximo seguro (%)', 'descontoMax'], ['Fator consumidor final', 'fatorConsumidor']
     ].map(function (pdef) {
       return '<div class="gc-kv"><span class="l">' + pdef[0] + '</span><b><span data-pov="' + pdef[1] + '" style="border-bottom:1px dotted var(--gcfnt);cursor:text">' + inVal(P[pdef[1]]) + '</span></b></div>';
     }).join('');
+  }
+  function renderFormulacao() {
+    var el = $('#gc-formulacao'); if (!el) return;
+    el.innerHTML =
+      '<div class="gc-blk" style="margin-bottom:14px"><h2>Parâmetros globais <span>clique em um valor para editar</span></h2>' + paramsKvHTML() + '</div>' +
+      mpCardHTML();
+  }
+  function renderCustos() {
+    var el = $('#gc-custos'); if (!el) return;
+    var fil = UI.filtros;
     var rowsC = prodRows().map(function (r) {
       var k = keyOf(r.produto, r.tamanho); var ci = custoInfo(k);
       var st = ci.total == null ? '<span class="gc-pill bad">Sem custo</span>' : '<span class="gc-pill ok">OK</span>';
@@ -26528,7 +26543,6 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<div class="gc-seg"><button class="' + (UI.seg === 'c1' ? 'on' : '') + '" data-seg="c1">Custos dos produtos</button>' +
       '<button class="' + (UI.seg === 'c2' ? 'on' : '') + '" data-seg="c2">Tabelas comerciais</button></div>' +
       '<div id="gc-c1" style="' + (UI.seg === 'c1' ? '' : 'display:none') + '">' +
-      '<div class="gc-blk gc-adv" style="margin-bottom:14px"><h2>Parâmetros globais <span>clique em um valor para editar</span></h2>' + paramsKv + '</div>' +
       '<div class="gc-blk"><h2>Custos dos produtos <span>quanto custa fazer</span></h2>' +
       '<div class="gc-filters">' +
       '<select data-flt="tc:0">' + selOpts(nomesUnicos(), fil['tc:0'], 'Produto: todos') + '</select>' +
@@ -26550,8 +26564,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     var bat = params().batelada || BATELADA_L_DEFAULT;
     var keys = insKeysAll();
     var insHtml = keys.map(function (i) {
-      var isCustom = INS_KEYS.indexOf(i) < 0;
-      var delBtn = isCustom ? ' <button type="button" class="gc-mp-del" data-mp-del="' + esc(i) + '" title="Remover esta matéria-prima">✕</button>' : '';
+      var delBtn = ' <button type="button" class="gc-mp-del" data-mp-del="' + esc(i) + '" title="Remover esta matéria-prima">✕</button>';
       return '<div class="gc-kv"><span class="l">Valor/L ' + esc(insLabel(i)) + ' (R$)</span><b>' + mpSpan('ins', i, p[i]) + delBtn + '</b></div>';
     }).join('');
     var matDefs = [['gar5', 'Garrafa + tampa 5L'], ['cx5', 'Caixa 5L (rateio 1/4)'], ['rot5', 'Rótulo 5L'],
@@ -26587,7 +26600,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<col style="width:12%"><col style="width:10%"><col style="width:11%"><col style="width:11%">';
     var theadIns = keys.map(function (i) { return '<th class="num">' + esc(insLabel(i)) + ' (L)</th>'; }).join('');
     return '<div class="gc-blk" style="margin-bottom:14px"><h2>Matérias-primas e receitas <span>batelada de ' + bat + 'L · clique em um valor para editar</span></h2>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 26px">' + insHtml + matHtml + '</div>' +
+      '<div class="gc-mp-grid">' + insHtml + matHtml + '</div>' +
       addBtn +
       '<div style="height:14px"></div>' +
       '<table class="gct"><colgroup>' + colgroup + '</colgroup>' +
@@ -27017,7 +27030,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     } catch (e) {}
   }
   function init() {
-    load(); fixSidebar(); mount();
+    load(); ensureInsumosLabels(); fixSidebar(); mount();
     if (typeof window.navTo === 'function' && !window.__gcNavPatched) {
       window.__gcNavPatched = true;
       var _nav = window.navTo;
@@ -28121,24 +28134,22 @@ body.theme-dark #gso-calc .gc-seg button.on{ background:#DBDBDB !important; colo
 #gso-calc .gc-lnk, #gso-calc .gc-filters .clear{ color: var(--gcink) !important; }
 
 /* ================= v34: REMODELAGEM DA CALCULADORA NO ESCURO (cinzas 100% neutros) ================= */
-/* Parâmetros globais: de lista comprida para grade de cartões (ambos os temas) */
-#gc-c1 > .gc-blk:first-child{ display:block; }
-#gc-c1 > .gc-blk:first-child h2{ margin-bottom:12px; }
-#gc-c1 > .gc-blk:first-child .gc-kv{ 
-  display:flex; flex-direction:column; align-items:flex-start; gap:6px;
-  border:1px solid var(--gcln); border-radius:10px; padding:10px 12px; margin:0;
+/* Parâmetros globais + Formulação: cartões compactos (ambos os temas) */
+#gc-formulacao > .gc-blk{ display:block; }
+#gc-formulacao > .gc-blk h2{ margin-bottom:10px; }
+#gc-formulacao > .gc-blk .gc-kv{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  border:1px solid var(--gcln); border-radius:10px; padding:7px 10px; margin:0;
+  background: rgba(0,0,0,.02);
 }
-#gc-c1 > .gc-blk:first-child .gc-kv .l{ font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
-#gc-c1 > .gc-blk:first-child .gc-kv b{ font-size:16px; }
-#gc-c1 > .gc-blk:first-child{ }
-#gc-c1 > .gc-blk:first-child .gc-kv{ background: rgba(0,0,0,.02); }
-#gc-c1 > .gc-blk:first-child > div:not([class]){ display:contents; }
-#gc-c1 > .gc-blk:first-child{ }
-#gc-c1 > .gc-blk:first-child{ }
+#gc-formulacao > .gc-blk .gc-kv .l{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+#gc-formulacao > .gc-blk .gc-kv b{ font-size:14px; display:flex; align-items:center; gap:4px; }
+#gc-formulacao > .gc-blk:first-child > div:not([class]){ display:contents; }
 @supports (display:grid){
-  #gc-c1 > .gc-blk:first-child{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; }
-  #gc-c1 > .gc-blk:first-child h2{ grid-column:1/-1; margin-bottom:2px; }
+  #gc-formulacao > .gc-blk:first-child{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
+  #gc-formulacao > .gc-blk:first-child h2{ grid-column:1/-1; margin-bottom:2px; }
 }
+#gc-formulacao .gc-mp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
 /* ---------- ESCURO: paleta neutra absoluta para o módulo ---------- */
 body.theme-dark #gso-calc{
   --gcsf:#232323; --gcink:#EDEDED; --gcmut:#B3B3B3; --gcfnt:#8C8C8C;
@@ -28148,7 +28159,7 @@ body.theme-dark #gso-calc .gc-blk{
   background:#232323 !important; border-color:#3A3A3A !important;
   box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 28px rgba(0,0,0,.35) !important;
 }
-body.theme-dark #gc-c1 > .gc-blk:first-child .gc-kv{ background:#1D1D1D; border-color:#3A3A3A; }
+body.theme-dark #gc-formulacao > .gc-blk .gc-kv{ background:#1D1D1D; border-color:#3A3A3A; }
 body.theme-dark #gso-calc [data-pov]{ color:#E6E6E6 !important; border-bottom-color:#6E6E6E !important; }
 body.theme-dark #gso-calc .gc-status .big,
 body.theme-dark #gso-calc td[data-ed]{ color:#E6E6E6 !important; }
