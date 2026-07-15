@@ -26025,7 +26025,11 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
   function insKeysAll() { return INS_KEYS.concat(insKeysExtra()); }
   function insLabel(key) { return (store.insumosLabels && store.insumosLabels[key]) || key; }
   function normNome(n) { return String(n || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
-  function insumos() { return Object.assign({}, INSUMOS_DEF, store.insumos || {}); }
+  function insumos() {
+    var p = Object.assign({}, INSUMOS_DEF, store.insumos || {});
+    insKeysExtra().forEach(function (key) { if (p[key] == null) p[key] = 0; });
+    return p;
+  }
   function materiais() { return Object.assign({}, MATERIAIS_DEF, store.materiais || {}); }
   function receitaDe(nome) {
     var k = normNome(nome);
@@ -26054,6 +26058,8 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     while (all.indexOf(finalKey) >= 0) { finalKey = key + n; n++; }
     store.insumosLabels = store.insumosLabels || {};
     store.insumosLabels[finalKey] = nome;
+    store.insumos = store.insumos || {};
+    store.insumos[finalKey] = 0;
     save();
     renderCustos(); renderEstrategia(); refreshResultado();
   }
