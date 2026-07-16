@@ -26623,9 +26623,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<table class="gct" id="gc-tc"><colgroup><col style="width:22%"><col style="width:9%"><col style="width:14%"><col style="width:13%"><col style="width:13%"><col style="width:11%"><col style="width:9%"><col style="width:9%"></colgroup>' +
       '<thead><tr><th>PRODUTO</th><th>EMB.</th><th class="num">CUSTO LÍQUIDO</th><th class="num">EMBALAGEM</th><th class="num">CUSTO TOTAL</th><th class="num">ATUALIZADO</th><th>STATUS</th><th></th></tr></thead>' +
       '<tbody>' + rowsC + '</tbody></table><div class="gc-empty" id="gc-tc-e">Nenhum produto com esses filtros.</div></div></div>' +
-      '<div id="gc-c2" style="' + (UI.seg === 'c2' ? '' : 'display:none') + '">' + tabelasHTML +
-      '<div class="gc-blk gc-params-grid" style="margin-top:14px"><h2>Parâmetros globais <span>clique em um valor para editar</span></h2>' + paramsKvHTML() + '</div>' +
-      '</div>';
+      '<div id="gc-c2" style="' + (UI.seg === 'c2' ? '' : 'display:none') + '">' + tabelasHTML + '</div>';
     aplicaFiltro('tc');
   }
 
@@ -26776,7 +26774,8 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<button class="clear" data-clr="te">limpar filtros</button><span class="gc-hint-ed">· Clique em um valor para editar</span></div>' +
       '<table class="gct" id="gc-te"><colgroup><col style="width:13%"><col style="width:6%"><col style="width:11%"><col style="width:12%"><col style="width:9%"><col style="width:19%"><col style="width:30%"></colgroup>' +
       '<thead><tr><th>PRODUTO</th><th>EMB.</th><th class="num">CUSTO</th><th class="num">PREÇO</th><th class="num">MARGEM</th><th>STATUS</th><th></th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table><div class="gc-empty" id="gc-te-e">Nada com esses filtros.</div></div>';
+      '<tbody>' + rows + '</tbody></table><div class="gc-empty" id="gc-te-e">Nada com esses filtros.</div></div>' +
+      '<div class="gc-blk gc-params-grid" style="margin-top:14px"><h2>Parâmetros globais <span>clique em um valor para editar</span></h2>' + paramsKvHTML() + '</div>';
     if (UI.estrStatus) filtraStatus('te', UI.estrStatus);
     aplicaFiltro('te');
   }
