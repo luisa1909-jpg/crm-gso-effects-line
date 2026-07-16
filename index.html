@@ -26404,7 +26404,6 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     if (!ac.usa) aromaSel = '<select id="gc-f-aroma" disabled><option>Neutro</option></select><div class="gc-hint">Sempre Neutro para este produto (liberável no cadastro).</div>';
     else aromaSel = '<select id="gc-f-aroma">' + ac.lista.map(function (a) { return '<option' + (a === f.aroma ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + (ac.novo ? '<option value="__novo">Cadastrar novo aroma…</option>' : '') + '</select>' + (ac.novo ? '<div class="gc-hint">Este produto permite cadastrar novos aromas.</div>' : '');
     var r = computeOrder(UI.itens, { params: params(), desconto: f.desc, freteTipo: f.frete, freteValor: f.freteV, pagamento: f.pag, tipoCliente: f.tipo });
-    var sug = r.ideal != null ? ('Sugestão: <b>' + fmt(r.ideal) + '</b> — ' + esc(f.tipo) + ' + ' + esc(f.pag) + (r.margem != null && r.margem >= params().margemMin ? ' + margem acima do mínimo.' : '.')) : 'Cadastre custos para receber sugestão de preço.';
     el.innerHTML =
       '<div class="gc-pedido">' +
       '<div>' +
@@ -26425,7 +26424,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<div class="gc-blk"><h2>Itens <span>' + UI.itens.length + '</span></h2>' + itensHTML() + '</div>' +
       '<div class="gc-blk"><h2>Simulações salvas <span>' + (store.sims || []).length + '</span></h2>' + simsHTML() + '</div>' +
       '</div>' +
-      '<div class="gc-blk" id="gc-res">' + resultadoHTML(r, sug) + '</div>' +
+      '<div class="gc-blk" id="gc-res">' + resultadoHTML(r) + '</div>' +
       '</div>';
     el.dataset.built = '1';
   }
@@ -26437,17 +26436,13 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
         '<div class="t">' + fmt(it.total) + '</div><button class="x" data-rm="' + i + '" title="Remover">×</button></div>';
     }).join('');
   }
-  function resultadoHTML(r, sug) {
+  function resultadoHTML(r) {
     var P = params();
     var head = '<div class="gc-status"><div><div class="lab">TOTAL DO PEDIDO</div><div class="big">' + fmt(r.valor) + '</div></div><span class="gc-pill ' + r.status.cls + '" style="margin-left:auto">' + r.status.label + '</span></div>';
-    var kv = '<div class="gc-kv"><span class="l">Margem líquida</span><b>' + fmtPct(r.margem) + '</b></div>' +
-      '<div class="gc-kv"><span class="l">Lucro estimado</span><b>' + fmt(r.lucro) + '</b></div>' +
-      '<div class="gc-kv"><span class="l">Mínimo recomendado</span><b>' + fmt(r.minimo) + '</b></div>' +
-      '<div class="gc-kv"><span class="l">Preço ideal</span><b>' + fmt(r.ideal) + '</b></div>' +
-      '<div class="gc-kv"><span class="l">Preço premium</span><b>' + fmt(r.premium) + '</b></div>';
+    var kvTop = '<div class="gc-kv"><span class="l">Lucro estimado</span><b>' + fmt(r.lucro) + '</b></div>' +
+      '<div class="gc-kv"><span class="l">Mínimo recomendado</span><b>' + fmt(r.minimo) + '</b></div>';
     var msg = r.frase ? '<div class="gc-msg ' + (r.status.cls === 'gray' ? 'warn' : r.status.cls) + '">' + esc(r.frase) + '</div>' : '';
     var al = r.alertas.map(function (a) { return '<div class="gc-msg warn">' + esc(a) + '</div>'; }).join('');
-    var sugHtml = '<div class="gc-msg" style="background:var(--gcgrbg);color:var(--gcmut)">' + sug + '</div>';
     var materiaisRows = Object.keys(r.materiais || {})
       .filter(function (k) { return (r.materiais[k] || 0) > 0.001; })
       .map(function (k) { return '<div class="gc-kv"><span class="l">Matéria-prima: ' + esc(insLabel(k)) + '</span><b>' + round2(r.materiais[k]).toLocaleString('pt-BR') + ' L</b></div>'; })
@@ -26459,6 +26454,11 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<div class="gc-kv"><span class="l">Garrafas + tampas + rótulos 5L</span><b>' + r.un5 + '</b></div>' +
       '<div class="gc-kv"><span class="l">Garrafas + tampas + rótulos 1L</span><b>' + r.un1 + '</b></div>' +
       (materiaisRows || '<div class="gc-kv"><span class="l">Matérias-primas</span><b>—</b></div>') +
+      '</details>';
+    var kvMore = '<details class="gc-slim"><summary>Outros indicadores</summary>' +
+      '<div class="gc-kv"><span class="l">Margem líquida</span><b>' + fmtPct(r.margem) + '</b></div>' +
+      '<div class="gc-kv"><span class="l">Preço ideal</span><b>' + fmt(r.ideal) + '</b></div>' +
+      '<div class="gc-kv"><span class="l">Preço premium</span><b>' + fmt(r.premium) + '</b></div>' +
       '</details>';
     var custo = '<details class="gc-slim"><summary>Custo</summary>' +
       '<div class="gc-kv"><span class="l">Produtos + embalagem</span><b>' + fmt(r.custoProd) + '</b></div>' +
@@ -26473,13 +26473,11 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       '<button class="gc-btn zap" id="gc-zap">Orçamento WhatsApp</button>' +
       '<button class="gc-btn" id="gc-salvar">Salvar simulação</button>' +
       '<button class="gc-btn red" id="gc-limpar">Limpar</button></div>';
-    return head + kv + msg + al + sugHtml + prod + custo + det + acts;
+    return head + kvTop + msg + al + prod + kvMore + custo + det + acts;
   }
   function refreshResultado() {
     var f = fields();
-    var r = computeOrder(UI.itens, { params: params(), desconto: f.desc, freteTipo: f.frete, freteValor: f.freteV, pagamento: f.pag, tipoCliente: f.tipo });
-    var sug = r.ideal != null ? ('Sugestão: <b>' + fmt(r.ideal) + '</b> — ' + esc(f.tipo) + ' + ' + esc(f.pag) + (r.margem != null && r.margem >= params().margemMin ? ' + margem acima do mínimo.' : '.')) : 'Cadastre custos para receber sugestão de preço.';
-    var res = $('#gc-res'); if (res) res.innerHTML = resultadoHTML(r, sug);
+    var res = $('#gc-res'); if (res) res.innerHTML = resultadoHTML(r);
     var iw = $('#gc-pedido .gc-blk:nth-child(1)'); // no-op guard
     return r;
   }
