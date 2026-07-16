@@ -25903,8 +25903,8 @@ body.theme-dark #gso-calc{ --gcbg:#1f1f1f; --gcsf:#272727; --gcink:#F4F4F4; --gc
 #gso-calc table.gct tr:last-child td{ border-bottom:0; }
 #gso-calc .num{ text-align:right; }
 #gso-calc th.num{ text-align:right; }
-#gso-calc .gc-lnk{ border:0; background:none; font:600 12px inherit; font-family:inherit; color:var(--gcink); text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; }
-#gso-calc .gc-mp-del{ border:0; background:none; font:700 11px inherit; font-family:inherit; color:var(--gcbd); cursor:pointer; padding:0 0 0 6px; opacity:.75; }
+#gso-calc .gc-lnk{ border:0 !important; background:none !important; box-shadow:none !important; min-height:0 !important; border-radius:0 !important; font:600 12px inherit; font-family:inherit; color:var(--gcink) !important; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0 !important; }
+#gso-calc .gc-mp-del{ border:0 !important; background:none !important; box-shadow:none !important; min-height:0 !important; border-radius:0 !important; font:700 11px inherit; font-family:inherit; color:var(--gcbd) !important; cursor:pointer; padding:0 0 0 6px; opacity:.75; }
 #gso-calc .gc-mp-del:hover{ opacity:1; }
 #gso-calc tr.gc-hide{ display:none; }
 #gso-calc .gc-empty{ padding:16px 8px; color:var(--gcfnt); font-size:12.5px; display:none; }
@@ -26701,8 +26701,8 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
         '<td><span class="gc-pill ' + st.cls + '">' + st.label + '</span></td></tr>';
     }).join('');
     return '<div class="gc-blk gc-tabela-tier gc-tabela-tier--' + tom + '"><h2>' + esc(titulo) + '</h2>' +
-      '<table class="gct"><colgroup><col style="width:36%"><col style="width:24%"><col style="width:18%"><col style="width:22%"></colgroup>' +
-      '<thead><tr><th>PRODUTO</th><th class="num">VALOR</th><th class="num">MARG.</th><th>STATUS</th></tr></thead>' +
+      '<table class="gct"><colgroup><col style="width:38%"><col style="width:22%"><col style="width:17%"><col style="width:23%"></colgroup>' +
+      '<thead><tr><th>PRODUTO</th><th class="num">VALOR</th><th class="num">MARGEM</th><th>STATUS</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>';
   }
   function renderTabelaComercial() {
@@ -28164,58 +28164,61 @@ body.theme-dark #gso-calc .gc-seg button.on{ background:#DBDBDB !important; colo
 #gso-calc .gc-msg.bad{ border-left-color: var(--crm-danger, #C93C37); }
 #gso-calc .gc-lnk, #gso-calc .gc-filters .clear{ color: var(--gcink) !important; }
 
-/* ================= v34: REMODELAGEM DA CALCULADORA NO ESCURO (cinzas 100% neutros) ================= */
-/* Parâmetros globais + Formulação: cartões compactos (ambos os temas) */
+/* ================= v35: FORMULAÇÃO + TABELAS COMERCIAIS — layout plano, sem caixa dentro de caixa ================= */
 #gc-formulacao > .gc-blk{ display:block; }
-#gc-formulacao > .gc-blk h2{ margin-bottom:10px; }
+#gc-formulacao > .gc-blk h2{ margin-bottom:12px; }
+
+/* Valor/L, unidades e Parâmetros globais: lista simples em colunas, sem cartão por item */
 #gc-formulacao > .gc-blk .gc-kv, .gc-params-grid .gc-kv{
-  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
-  border:1px solid var(--gcln); border-radius:10px; padding:7px 10px; margin:0;
-  background: rgba(0,0,0,.02);
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+  border:0; border-bottom:1px solid var(--gcln); border-radius:0; padding:8px 0; margin:0; background:none;
 }
-#gc-formulacao > .gc-blk .gc-kv .l, .gc-params-grid .gc-kv .l{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
-#gc-formulacao > .gc-blk .gc-kv b, .gc-params-grid .gc-kv b{ font-size:14px; display:flex; align-items:center; gap:4px; }
+#gc-formulacao > .gc-blk .gc-kv .l, .gc-params-grid .gc-kv .l{ font-size:11.5px; font-weight:500; color:var(--gcmut); letter-spacing:0; text-transform:none; }
+#gc-formulacao > .gc-blk .gc-kv b, .gc-params-grid .gc-kv b{ font-size:14px; display:flex; align-items:center; gap:6px; }
 .gc-params-grid > div:not([class]){ display:contents; }
 @supports (display:grid){
-  .gc-params-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
-  .gc-params-grid h2{ grid-column:1/-1; margin-bottom:2px; }
+  .gc-params-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0 28px; }
+  .gc-params-grid h2{ grid-column:1/-1; margin-bottom:4px; }
 }
-#gc-formulacao .gc-mp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
-#gso-calc .gc-un-toggle{ display:inline-flex; border:1px solid var(--gcln2); border-radius:6px; overflow:hidden; margin-top:2px; }
-#gso-calc .gc-un-btn{ border:0; background:none; padding:2px 6px; font:600 9px inherit; font-family:inherit; color:var(--gcmut); cursor:pointer; }
-#gso-calc .gc-un-btn.on{ background:var(--gcac); color:var(--gcaci); }
-#gso-calc .gc-receita-list{ display:flex; flex-direction:column; gap:8px; }
-#gso-calc .gc-receita-card{ border:1px solid var(--gcln); border-radius:10px; padding:10px 12px; }
+#gc-formulacao .gc-mp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0 28px; margin-bottom:6px; }
+
+/* unidade L/Kg: texto simples, sem botão com fundo */
+#gso-calc .gc-un-toggle{ display:inline-flex; gap:6px; margin-left:2px; }
+#gso-calc .gc-un-btn{ border:0 !important; background:none !important; box-shadow:none !important; min-height:0 !important; border-radius:0 !important; padding:0 !important; font:600 10px inherit !important; font-family:inherit; color:var(--gcfnt) !important; cursor:pointer; }
+#gso-calc .gc-un-btn.on{ color:var(--gcink) !important; text-decoration:underline; text-underline-offset:2px; }
+
+/* Receitas por produto: uma lista, separadas por linha — não um cartão por produto */
+#gso-calc .gc-receita-list{ border-top:1px solid var(--gcln); }
+#gso-calc .gc-receita-card{ border:0; border-radius:0; padding:12px 0; border-bottom:1px solid var(--gcln); }
 #gso-calc .gc-receita-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; font-size:13px; }
-#gso-calc .gc-receita-chips{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-#gso-calc .gc-mat-chip{ display:inline-flex; align-items:center; gap:5px; background:var(--gcgrbg); border-radius:999px; padding:3px 6px 3px 10px; font-size:11.5px; }
-#gso-calc .gc-mat-chip-l{ color:var(--gcmut); font-weight:600; }
+#gso-calc .gc-receita-chips{ display:flex; flex-wrap:wrap; column-gap:20px; row-gap:7px; align-items:baseline; }
+
+/* matéria-prima dentro da receita: texto corrido, sem pílula */
+#gso-calc .gc-mat-chip{ display:inline-flex; align-items:baseline; gap:4px; background:none; border-radius:0; padding:0; font-size:12.5px; }
+#gso-calc .gc-mat-chip-l{ color:var(--gcmut); }
 #gso-calc .gc-mat-chip-v{ cursor:text; border-bottom:1px dotted var(--gcfnt); font-weight:700; font-variant-numeric:tabular-nums; }
-#gso-calc .gc-mat-chip-u{ color:var(--gcfnt); font-size:10px; }
-#gso-calc .gc-mat-chip-x{ border:0; background:none; color:var(--gcbd); cursor:pointer; font:700 11px inherit; padding:0 2px; opacity:.7; }
+#gso-calc .gc-mat-chip-u{ color:var(--gcfnt); font-size:10.5px; }
+#gso-calc .gc-mat-chip-x{ border:0 !important; background:none !important; box-shadow:none !important; min-height:0 !important; border-radius:0 !important; color:var(--gcbd) !important; cursor:pointer; font:700 11px inherit; padding:0 0 0 2px; opacity:.6; }
 #gso-calc .gc-mat-chip-x:hover{ opacity:1; }
-#gso-calc .gc-mat-add{ font-size:11.5px; padding:4px 8px; border:1px dashed var(--gcln2); border-radius:999px; background:none; color:var(--gcmut); font-family:inherit; }
-#gso-calc .gc-receita-foot{ margin-top:8px; padding-top:8px; border-top:1px solid var(--gcln); font-size:11.5px; color:var(--gcmut); }
+#gso-calc .gc-mat-add{ font-size:12px !important; padding:0 0 1px !important; min-height:0 !important; border:0 !important; border-bottom:1px dotted var(--gcln2) !important; border-radius:0 !important; background:none !important; box-shadow:none !important; color:var(--gcmut) !important; font-family:inherit; }
+#gso-calc .gc-receita-foot{ margin-top:8px; font-size:11.5px; color:var(--gcmut); }
 #gso-calc .gc-receita-foot b{ color:var(--gcink); }
-.gc-tabelas-3-grid{ display:grid; grid-template-columns:1fr; gap:10px; }
-@media (min-width:860px){
-  .gc-tabelas-3-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+
+/* Tabelas comerciais: Consumidor final + Revenda em cima, Revenda (10%) embaixo — sem cartão por tabela */
+.gc-tabelas-3-grid{ display:grid; grid-template-columns:1fr; gap:26px; }
+@media (min-width:640px){
+  .gc-tabelas-3-grid{ grid-template-columns:1fr 1fr; column-gap:32px; }
+  .gc-tabelas-3-grid > *:nth-child(3){ grid-column:1 / -1; max-width:calc(50% - 16px); }
 }
-#gso-calc .gc-tabela-tier{ padding:10px; margin:0; min-width:0; border-top:3px solid var(--gcln) !important; }
-.gc-tabela-tier h2{ font-size:11.5px; margin-bottom:8px; }
+#gso-calc .gc-tabela-tier{ background:none !important; border:0 !important; box-shadow:none !important; padding:0 !important; margin:0 !important; min-width:0; }
+.gc-tabela-tier h2{ font-size:13px; margin-bottom:10px; padding-bottom:9px; border-bottom:2px solid var(--gcln); }
 .gc-tabela-tier table.gct{ table-layout:fixed; width:100%; }
-#gso-calc .gc-tabela-tier table.gct th{ font-size:8px !important; padding:4px 3px !important; white-space:normal !important; letter-spacing:0 !important; }
-.gc-tabela-tier table.gct td{ padding:5px 4px; font-size:11px; white-space:normal; word-break:break-word; }
-.gc-tabela-tier .gc-pill{ padding:2px 6px; font-size:9px; white-space:normal; line-height:1.35; }
-#gso-calc .gc-tabela-tier--gray{ border-top-color:var(--gcgr) !important; }
-#gso-calc .gc-tabela-tier--gray h2{ color:var(--gcgr) !important; }
-#gso-calc .gc-tabela-tier--gray table.gct thead th{ background:var(--gcgrbg) !important; }
-#gso-calc .gc-tabela-tier--blue{ border-top-color:var(--gcbl) !important; }
-#gso-calc .gc-tabela-tier--blue h2{ color:var(--gcbl) !important; }
-#gso-calc .gc-tabela-tier--blue table.gct thead th{ background:var(--gcblbg) !important; }
-#gso-calc .gc-tabela-tier--red{ border-top-color:var(--gcbd) !important; }
-#gso-calc .gc-tabela-tier--red h2{ color:var(--gcbd) !important; }
-#gso-calc .gc-tabela-tier--red table.gct thead th{ background:var(--gcbdbg) !important; }
+#gso-calc .gc-tabela-tier table.gct th{ font-size:9.5px !important; padding:6px 4px !important; white-space:normal !important; letter-spacing:0 !important; background:none !important; }
+.gc-tabela-tier table.gct td{ padding:8px 4px; font-size:12px; white-space:normal; word-break:break-word; }
+.gc-tabela-tier .gc-pill{ padding:2px 7px; font-size:9.5px; white-space:normal; line-height:1.35; }
+#gso-calc .gc-tabela-tier--gray h2{ color:var(--gcgr) !important; border-bottom-color:var(--gcgr) !important; }
+#gso-calc .gc-tabela-tier--blue h2{ color:var(--gcbl) !important; border-bottom-color:var(--gcbl) !important; }
+#gso-calc .gc-tabela-tier--red h2{ color:var(--gcbd) !important; border-bottom-color:var(--gcbd) !important; }
 /* ---------- ESCURO: paleta neutra absoluta para o módulo ---------- */
 body.theme-dark #gso-calc{
   --gcsf:#232323; --gcink:#EDEDED; --gcmut:#B3B3B3; --gcfnt:#8C8C8C;
@@ -28225,7 +28228,7 @@ body.theme-dark #gso-calc .gc-blk{
   background:#232323 !important; border-color:#3A3A3A !important;
   box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 28px rgba(0,0,0,.35) !important;
 }
-body.theme-dark #gc-formulacao > .gc-blk .gc-kv, body.theme-dark .gc-params-grid .gc-kv{ background:#1D1D1D; border-color:#3A3A3A; }
+body.theme-dark #gc-formulacao > .gc-blk .gc-kv, body.theme-dark .gc-params-grid .gc-kv{ border-color:#3A3A3A; }
 body.theme-dark #gso-calc [data-pov]{ color:#E6E6E6 !important; border-bottom-color:#6E6E6E !important; }
 body.theme-dark #gso-calc .gc-status .big,
 body.theme-dark #gso-calc td[data-ed]{ color:#E6E6E6 !important; }
