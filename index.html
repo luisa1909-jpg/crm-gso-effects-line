@@ -24677,7 +24677,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
 
   /* ---------- matérias-primas, materiais e receitas (batelada) ---------- */
   var INSUMOS_DEF = { G1: 0, P1: 0, A1: 0, A2: 0, M1: 10.07 };
-  var MATERIAIS_DEF = { gar5: 0, cx5: 0, rot5: 0, gar1: 0, cx1: 0, rot1: 0, caixaUnit5: 0, frasco120: 0, pote150: 0, pote250: 0 };
+  var MATERIAIS_DEF = { gar5: 0, cx5: 0, rot5: 0, gar1: 0, cx1: 0, rot1: 0, caixaUnit5: 0, frasco120: 0, pote150: 0, pote250: 0, rotFrasco120: 0, rotPote150: 0, rotPote250: 0 };
   var RECEITAS_DEF = {
     palco: { G1: 22, A1: 10, A2: 168 },
     djsandclubs: { G1: 60, A1: 10, A2: 130 },
@@ -24833,11 +24833,11 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
       defRot = is5 ? m.rot5 : m.rot1;
       defCx = is5 ? (m.cx5 / 4) : (m.cx1 / 6);
     } else if (tam === '120mL') {
-      defGar = m.frasco120; defRot = 0; defCx = 0;
+      defGar = m.frasco120; defRot = m.rotFrasco120; defCx = 0;
     } else if (tam === '150g') {
-      defGar = m.pote150; defRot = 0; defCx = 0;
+      defGar = m.pote150; defRot = m.rotPote150; defCx = 0;
     } else if (tam === '250g') {
-      defGar = m.pote250; defRot = 0; defCx = 0;
+      defGar = m.pote250; defRot = m.rotPote250; defCx = 0;
     } else {
       defGar = 0; defRot = 0; defCx = 0;
     }
@@ -25389,7 +25389,7 @@ body.theme-dark #gso-calc-dr, body.theme-dark #gso-calc-mbg .mod{ --gcsf:#272727
     }).join('');
     var matDefs5 = [['gar5', 'Garrafa + tampa'], ['cx5', 'Caixa (rateio 1/4)'], ['rot5', 'Rótulo']];
     var matDefs1 = [['gar1', 'Garrafa + tampa'], ['cx1', 'Caixa (rateio 1/6)'], ['rot1', 'Rótulo']];
-    var matDefsOutras = [['caixaUnit5', 'Caixa unitária (1 galão 5L)'], ['frasco120', 'Frasco 120mL'], ['pote150', 'Pote + tampa 150g'], ['pote250', 'Pote + tampa 250g']];
+    var matDefsOutras = [['caixaUnit5', 'Caixa unitária (1 galão 5L)'], ['frasco120', 'Frasco 120mL'], ['rotFrasco120', 'Rótulo frasco 120mL'], ['pote150', 'Pote + tampa 150g'], ['rotPote150', 'Rótulo pote 150g'], ['pote250', 'Pote + tampa 250g'], ['rotPote250', 'Rótulo pote 250g']];
     function matColHtml(defs) {
       return defs.map(function (d) {
         return '<div class="gc-kv"><span class="l">' + d[1] + ' (R$)</span><b>' + mpSpan('mat', d[0], m[d[0]]) + '</b></div>';
