@@ -12975,7 +12975,7 @@ th,
     <div class="modal-title" id="ver-mais-title">Detalhes</div>
     <div id="ver-mais-body"></div>
     <div class="form-actions">
-      <button type="button" class="row-icon-btn row-icon-btn-close" onclick="document.getElementById('modal-ver-mais').classList.remove('show')" title="Fechar" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="btn btn-primary" onclick="document.getElementById('modal-ver-mais').classList.remove('show')">Fechar</button>
     </div>
   </div>
 </div>
@@ -17035,7 +17035,7 @@ function renderVendas() {
         <td data-label="Ações">
           <div class="row-actions">
             <button class="btn btn-small" onclick="openEditVenda('${r.id}')">Editar</button>
-            <button type="button" class="row-icon-btn row-icon-btn-danger" onclick="excluirVenda('${r.id}')" title="Apagar venda" aria-label="Apagar venda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+            <button class="btn btn-small btn-danger" onclick="excluirVenda('${r.id}')">Apagar</button>
             <button class="btn btn-small" onclick="verMaisVenda('${r.id}')">Ver mais</button>
           </div>
         </td>
@@ -21863,7 +21863,7 @@ init();
       '<td data-label="Status"><span class="pill ' + (typeof pillClass === 'function' ? pillClass(c.status) : '') + '">' + esc(c.status || '—') + '</span></td>' +
       '<td data-label="Ações"><div class="row-actions">' +
       '<button class="btn btn-small" onclick="openClienteModal(' + (typeof attrJsString === 'function' ? attrJsString(c.nome) : JSON.stringify(c.nome || '')) + ')">Editar</button>' +
-      '<button type="button" class="row-icon-btn row-icon-btn-danger" onclick="excluirCliente(' + (typeof attrJsString === 'function' ? attrJsString(c.nome) : JSON.stringify(c.nome || '')) + ')" title="Apagar cliente" aria-label="Apagar cliente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>' +
+      '<button class="btn btn-small btn-danger" onclick="excluirCliente(' + (typeof attrJsString === 'function' ? attrJsString(c.nome) : JSON.stringify(c.nome || '')) + ')">Apagar</button>' +
       '<button class="btn btn-small" onclick="verMaisCliente(' + (typeof attrJsString === 'function' ? attrJsString(c.nome) : JSON.stringify(c.nome || '')) + ')">Ver mais</button>' +
       '</div></td></tr>').join('');
   };
@@ -25396,32 +25396,6 @@ body.theme-dark .sales-table .row-actions .btn-danger { background:rgba(216,108,
 /* AÇÕES: botões largura natural, empilhados à esquerda, uniformes */
 .sales-table .row-actions { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; max-width:100% !important; }
 .sales-table .row-actions .btn-small { width: auto !important; min-width: 74px; padding: 6px 10px !important; font-size: 11px !important; }
-
-/* Botões redondos só com ícone (Apagar / Fechar), usados nas linhas de Vendas e Clientes
-   e no rodapé do modal "Ver mais" que as duas abas compartilham. */
-.row-icon-btn {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  padding: 0 !important;
-  border-radius: 50% !important;
-  border: none !important;
-  cursor: pointer;
-  box-shadow: none !important;
-  background: #F0F1F3 !important;
-  color: #6B7280 !important;
-}
-.row-icon-btn svg { width: 14px; height: 14px; pointer-events: none; }
-.row-icon-btn-close:hover { background: #E3E5E9 !important; color: #4B5563 !important; }
-.row-icon-btn-danger { background: #FBE4E4 !important; color: #C0392B !important; }
-.row-icon-btn-danger:hover { background: #F6C9C9 !important; color: #A72B22 !important; }
-body.theme-dark .row-icon-btn-close { background: rgba(255,255,255,.08) !important; color: #B7BDC6 !important; }
-body.theme-dark .row-icon-btn-close:hover { background: rgba(255,255,255,.14) !important; color: #E5E7EB !important; }
-body.theme-dark .row-icon-btn-danger { background: rgba(216,108,108,.18) !important; color: #E89A9A !important; }
-body.theme-dark .row-icon-btn-danger:hover { background: rgba(216,108,108,.28) !important; color: #F2B7B7 !important; }
 
 /* ============ v27: ZERAR todo o azul no TEMA ESCURO ============ */
 /* tokens azuis -> grafite (só no escuro) */
